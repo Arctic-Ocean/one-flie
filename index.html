@@ -1059,7 +1059,7 @@ BAL.ult = { max: 100, gain: 20, comboGain: 25, comboAt: 3, radius: 7.5 };
 var ULT_NAMES = {
   steel: '강철 폭풍', gold: '황금 심판', ice: '절대 영도', fire: '홍련 폭발', arcane: '비전 붕괴', poison: '맹독 역병',
   wind: '천공 질풍', thunder: '뇌신 강림', nature: '숲의 분노', moon: '월광 난무', earth: '대지 붕괴', shadow: '암흑 강림',
-  holy: '신성 심판', star: '유성 낙하', nova: 'Ia형 초신성'
+  holy: '신성 심판', star: '유성 낙하', nova: 'Ia형 초신성', blackhole: '사건의 지평선'
 };
 
 // 콤보(연속 정답)에 따른 처치 보너스 골드
@@ -1119,7 +1119,8 @@ var ELEMENTS = {
   shadow:  { name: '암흑', c1: 0xe0a8ff, c2: 0x7a2ee8, glow: 0x9d4aff },
   holy:    { name: '신성', c1: 0xffffff, c2: 0xffe9a0, glow: 0xfff2c8 },
   star:    { name: '별빛', c1: 0xffffff, c2: 0x7aa8ff, glow: 0xa8c4ff },
-  nova:    { name: '초신성', c1: 0xffffff, c2: 0x6fb6ff, glow: 0xffa8dc }
+  nova:    { name: '초신성', c1: 0xffffff, c2: 0x6fb6ff, glow: 0xffa8dc },
+  blackhole: { name: '블랙홀', c1: 0xffe2b0, c2: 0x8a5cff, glow: 0xffa860 }
 };
 // id 0~5 는 기존 저장 데이터와 호환되도록 그대로 유지. 새 무기는 6번부터.
 var WEAPONS = [
@@ -1141,7 +1142,8 @@ var WEAPONS = [
   { id: 15, name: '여명의 성창',     type: 'spear',      el: 'holy',    stars: 5, price: 3600, desc: '새벽빛으로 빚은 창. 꿰뚫은 자리에 빛기둥이 솟는다.' },
   { id: 16, name: '별빛 활',         type: 'bow',        el: 'star',    stars: 6, price: 4500, desc: '시위를 당기면 별이 모인다. 유성처럼 날아가는 화살.' },
   { id: 17, name: '용의 숨결',       type: 'staff',      el: 'fire',    stars: 6, price: 5000, desc: '용의 심장이 박힌 지팡이. 하늘을 불러 불타는 운석을 떨어뜨린다.', meteor: true, move: '운석 낙하', ultName: '메테오' },
-  { id: 18, name: '초신성',         type: 'scepter',    el: 'nova',    stars: 7, price: 7000, desc: '죽어가는 별의 심장을 가둔 홀. 별핵이 붕괴했다가 적 앞에서 초신성으로 폭발한다.' }
+  { id: 18, name: '초신성',         type: 'scepter',    el: 'nova',    stars: 7, price: 7000, desc: '죽어가는 별의 심장을 가둔 홀. 별핵이 붕괴했다가 적 앞에서 초신성으로 폭발한다.' },
+  { id: 19, name: '가이아 BH3',     type: 'staff',      el: 'blackhole', stars: 8, price: 9000, desc: '태양 33배, 우리 은하에서 가장 무거운 잠든 블랙홀을 깨운 지팡이. 적을 국수처럼 늘여 삼키고 제트를 뿜는다.', blackhole: true, move: '특이점 사출 → 조석 붕괴', ultName: '사건의 지평선' }
 ];
 function weaponById(id) { return WEAPONS[id] || WEAPONS[0]; }
 // 상점 진열 순서: 가격 오름차순
@@ -1485,16 +1487,19 @@ var SFX = (function () {
     spear: function () { noise(0.14, 0.14, 0, 'bandpass', 1200, 3800, 1.8, 0.02); },
     staff: function () { tone(280, 880, 0.4, 'sine', 0.06, 0, { vib: 9, vibDepth: 18, attack: 0.12 }); noise(0.4, 0.04, 0, 'highpass', 3000, 6000, 0.7, 0.2); },
     bow: function () { tone(140, 210, 0.3, 'sawtooth', 0.025, 0, { attack: 0.1 }); },
-    scepter: function () { tone(620, 70, 0.55, 'sawtooth', 0.035, 0, { attack: 0.3 }); noise(0.55, 0.06, 0, 'bandpass', 5200, 380, 1.4, 0.35); }   // 별핵 붕괴: 빨려 들어가는 소리
+    scepter: function () { tone(620, 70, 0.55, 'sawtooth', 0.035, 0, { attack: 0.3 }); noise(0.55, 0.06, 0, 'bandpass', 5200, 380, 1.4, 0.35); },   // 별핵 붕괴: 빨려 들어가는 소리
+    blackhole: function () { tone(95, 52, 0.5, 'sine', 0.12, 0, { attack: 0.22 }); noise(0.5, 0.07, 0, 'bandpass', 2600, 280, 1.3, 0.35); }       // 공간이 한쪽으로 쏠리는 저음
   };
   // 발사(원거리)
   var RELEASE = {
     staff: function () { tone(900, 300, 0.22, 'triangle', 0.09); noise(0.22, 0.09, 0, 'bandpass', 2400, 600, 1.2); },
     bow: function () { tone(330, 110, 0.16, 'triangle', 0.12); noise(0.12, 0.1, 0, 'bandpass', 3000, 1200, 2); },
-    scepter: function () { tone(1500, 2800, 0.07, 'square', 0.045); noise(0.14, 0.16, 0, 'highpass', 6500, 3000, 0.8); tone(280, 900, 0.22, 'sine', 0.08); }   // 충격 돌파
+    scepter: function () { tone(1500, 2800, 0.07, 'square', 0.045); noise(0.14, 0.16, 0, 'highpass', 6500, 3000, 0.8); tone(280, 900, 0.22, 'sine', 0.08); },   // 충격 돌파
+    blackhole: function () { tone(170, 36, 0.55, 'sine', 0.3); tone(2400, 320, 0.12, 'triangle', 0.04); noise(0.1, 0.17, 0, 'highpass', 5600, 2600, 0.8); noise(0.5, 0.1, 0.02, 'bandpass', 1700, 180, 1.1, 0.02); } // 특이점 사출: 둔중한 '쿵' + 찢기는 공기
   };
   // ---- 속성별 타격음 (heavy: 0~1 묵직함) ----
   var IMPACT = {
+    blackhole: function () { bhCollapse(0, true); },
     nova: function () { tone(72, 24, 1.1, 'sine', 0.5); noise(0.9, 0.26, 0, 'lowpass', 2600, 90, 0.7, 0.003); [1320, 1760, 2217, 2637].forEach(function (f, j) { tone(f, f * 0.985, 0.9, 'sine', 0.028, 0.07 + j * 0.05, { vib: 7, vibDepth: 6 }); }); },
     steel: function () { tone(1240, 1180, 0.16, 'square', 0.05); tone(1835, 1790, 0.12, 'triangle', 0.05); noise(0.09, 0.12, 0, 'highpass', 2500); },
     gold: function () { tone(1320, 1300, 0.18, 'triangle', 0.06); chord([1568, 2093, 2637, 3136], 0.2, 'sine', 0.045, 0.03, 0.045); noise(0.08, 0.08, 0, 'highpass', 4000); },
@@ -1829,7 +1834,141 @@ var SFX = (function () {
     hiss('bandpass', 600, 2400, 0.9, 0.5, 0.12, 0.04, panX, 0.3, 0.05);                          // 번지는 불길
   }
 
+  // ================================================================ 블랙홀 (가이아 BH3) 사운드
+  // 근거: NASA Chandra(2022) 페르세우스 은하단 블랙홀 소니피케이션 — 가운데 C보다 57옥타브 낮은 압력파를 끌어올린 '신음'
+  //      LIGO GW150914 — 블랙홀 병합의 처프(진동수 ∝ (t_c − t)^(−3/8), 진폭 ∝ f^(2/3)) 뒤 감쇠 진동 '링다운'
+  function moan(f, dur, vol, at, panX) {                                // 신음: 미끄러져 내려가는 톱니파 둘이 모음(포먼트) 필터를 지남
+    var c = ensure(); if (!c) return;
+    var t = c.currentTime + (at || 0), g = c.createGain(), f1 = c.createBiquadFilter(), f2 = c.createBiquadFilter(), vib = c.createOscillator(), vg = c.createGain();
+    f1.type = f2.type = 'bandpass'; f1.Q.value = 7; f2.Q.value = 9;
+    f1.frequency.setValueAtTime(620, t); f1.frequency.exponentialRampToValueAtTime(320, t + dur);     // '아' → '우'
+    f2.frequency.setValueAtTime(1100, t); f2.frequency.exponentialRampToValueAtTime(700, t + dur);
+    vib.frequency.value = 4.5; vg.gain.value = f * 0.03; vib.connect(vg);
+    [0, 7].forEach(function (dt) {
+      var o = c.createOscillator(); o.type = 'sawtooth'; o.detune.value = dt;
+      o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.78, t + dur);
+      vg.connect(o.frequency); o.connect(f1); o.connect(f2); o.start(t); o.stop(t + dur + 0.05);
+    });
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + dur * 0.35); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    f1.connect(g); f2.connect(g); route(g, panX, 0.6); vib.start(t); vib.stop(t + dur + 0.05);
+  }
+  function chirp(dur, vol, at, panX, f0) {                              // LIGO 처프: 합쳐지기 직전 급격히 높아지고 커짐
+    var c = ensure(); if (!c) return;
+    var t = c.currentTime + (at || 0), N = 96, fc = new Float32Array(N), gc = new Float32Array(N), top = Math.pow(0.015, -0.375);
+    for (var i = 0; i < N; i++) {
+      var r = Math.pow(Math.max(1 - i / (N - 1), 0.015), -0.375);
+      fc[i] = f0 * r; gc[i] = vol * Math.pow(r / top, 2 / 3) * Math.min(1, i / 4, (N - 1 - i) / 3);   // 페이드 인·아웃을 곡선 안에 (곡선 뒤에 예약하면 시작 시각이 밀릴 때 겹침 오류)
+    }
+    var g = c.createGain(); g.gain.value = 0; g.gain.setValueCurveAtTime(gc, t, dur);
+    [[1, 'sine', 1], [2, 'triangle', 0.25]].forEach(function (hm) {      // 기본음 + 2배음 (중력파 진동수 = 공전 × 2)
+      var o = c.createOscillator(), og = c.createGain(), fh = new Float32Array(N);
+      for (var k = 0; k < N; k++) fh[k] = fc[k] * hm[0];
+      o.type = hm[1]; og.gain.value = hm[2]; o.frequency.setValueCurveAtTime(fh, t, dur);
+      o.connect(og); og.connect(g); o.start(t); o.stop(t + dur + 0.15);
+    });
+    route(g, panX, 0.4);
+  }
+  function bhCharge(dur) {                                              // 깨어나는 특이점: 신음 + 빨려 드는 바람 + 차오르는 서브 + 내려가는 별빛
+    if (!sfxOn()) return;
+    var c = ensure(); if (!c) return;
+    dur = Math.max(0.2, dur || 0.45);
+    moan(55, dur + 0.4, 0.1, 0, 0);
+    hiss('bandpass', 5200, 240, 1.3, dur, 0.12, 0, 0, 0.3, dur * 0.85);
+    sweep('sine', 32, 50, dur + 0.05, 0.2, 0, 0, 0, dur * 0.7);
+    [1760, 1480, 1175, 988].forEach(function (f, i) { fm(f, 1.4, 5, 0.5, 0.022, i * dur / 4, i % 2 ? 0.5 : -0.5, 0.6); });
+  }
+  function bhPull(panX, dur) {                                          // 특이점이 열려 빨아들임: 처프 + 안으로 말려 드는 바람 + 서브
+    if (!sfxOn()) return;
+    var c = ensure(); if (!c) return;
+    dur = dur || 0.45;
+    chirp(dur, 0.16, 0, panX, 52);
+    hiss('bandpass', 5200, 260, 1.4, dur, 0.13, 0, panX, 0.3, dur * 0.85);
+    sweep('sine', 80, 38, dur, 0.16, 0, panX, 0, dur * 0.6);
+    moan(98, dur + 0.25, 0.05, 0, panX);
+  }
+  function bhCollapse(panX, big) {                                      // 붕괴: 순간음 → 서브 드롭 → 찌그러진 몸통 → 링다운 종소리 → 제트 → 럼블
+    if (!sfxOn()) return;
+    var c = ensure(); if (!c) return;
+    panX = panX || 0;
+    hiss('highpass', 5200, 2600, 0.7, 0.07, 0.42, 0, panX);
+    sweep('sine', big ? 130 : 150, 24, big ? 1.5 : 1.0, big ? 0.85 : 0.6, 0, panX, 0.3, 0.003);
+    var t = c.currentTime, o = c.createOscillator(), ws = c.createWaveShaper(), lp = c.createBiquadFilter(), g = c.createGain();
+    if (!crunch) crunch = makeDistortionCurve(400);
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.8);
+    ws.curve = crunch; lp.type = 'lowpass'; lp.frequency.setValueAtTime(2000, t); lp.frequency.exponentialRampToValueAtTime(280, t + 0.8);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(big ? 0.3 : 0.22, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+    o.connect(ws); ws.connect(lp); lp.connect(g); route(g, panX, 0.4); o.start(t); o.stop(t + 0.95);
+    fm(247, 1.4, 5, 1.6, 0.08, 0.02, panX, 0.8); fm(370, 1.4, 4, 1.2, 0.05, 0.05, -panX * 0.5, 0.8);        // 링다운: 준정규 진동을 FM 종소리로
+    hiss('bandpass', 1500, 7500, 1.2, 0.55, 0.15, 0.03, panX - 0.35, 0.4, 0.03);                               // 쌍둥이 제트
+    hiss('bandpass', 1500, 7500, 1.2, 0.55, 0.15, 0.05, panX + 0.35, 0.4, 0.03);
+    hiss('lowpass', 1300, 60, 0.6, big ? 2.2 : 1.4, big ? 0.34 : 0.22, 0.02, panX, 0.7, 0.006);               // 럼블 꼬리
+  }
+  // 궁극기 한 번 동안 쓰는 사운드 컨트롤러. 게임이 매 프레임 update(열림 0~1, 시간, 붕괴까지 진행도 0~1)를 부른다
+  function bhUlt() {
+    if (!sfxOn()) return null;
+    var c = ensure(); if (!c) return null;
+    var rv = reverb(), all = [], dead = false, ducked = false;
+    function out(node, rev) {
+      var p = c.createStereoPanner ? c.createStereoPanner() : null, o = node;
+      if (p) { node.connect(p); o = p; }
+      o.connect(sfxBus);
+      if (rv && rev) { var s = c.createGain(); s.gain.value = rev; o.connect(s); s.connect(rv); }
+      return p;
+    }
+    function osc(type, f) { var o = c.createOscillator(); o.type = type; o.frequency.value = f; o.start(); all.push(o); return o; }
+    function quiet() { var g = c.createGain(); g.gain.value = 0.0001; return g; }
+    var sub = osc('sine', 30), sg = quiet(); sub.connect(sg); sg.connect(sfxBus);                                  // ① 서브 드론
+    var m1 = osc('sawtooth', 55), m2 = osc('sawtooth', 55.3), fA = c.createBiquadFilter(), fB = c.createBiquadFilter(), mg = quiet(); // ② 페르세우스의 신음
+    fA.type = fB.type = 'bandpass'; fA.Q.value = 7; fB.Q.value = 9; fA.frequency.value = 480; fB.frequency.value = 900;
+    [m1, m2].forEach(function (o) { o.connect(fA); o.connect(fB); }); fA.connect(mg); fB.connect(mg); out(mg, 0.6);
+    var nz = c.createBufferSource(), nf = c.createBiquadFilter(), ng = quiet();                                    // ③ 원반을 따라 도는 바람
+    nz.buffer = noiseBuf; nz.loop = true; nf.type = 'bandpass'; nf.Q.value = 1.4; nz.connect(nf); nf.connect(ng);
+    var pn = out(ng, 0.4); nz.start(); all.push(nz);
+    var r1 = osc('sawtooth', 41), r2 = osc('sawtooth', 41.4), rl = c.createBiquadFilter(), rg = quiet();         // ④ 차오르는 굉음
+    rl.type = 'lowpass'; rl.Q.value = 5; rl.frequency.value = 120; r1.connect(rl); r2.connect(rl); rl.connect(rg); out(rg, 0.4);
+    var gains = [sg, mg, ng, rg];
+    function hold(param, v, t, tc) { param.cancelScheduledValues(t); param.setTargetAtTime(v, t, tc); param.setTargetAtTime(0.0001, t + 0.3, 0.08); } // 갱신이 끊기면 저절로 사라짐
+    function fade(tc) { var t = c.currentTime; gains.forEach(function (g) { g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0.0001, t, tc); }); }
+    var h = {
+      start: function () { moan(82, 1.4, 0.08, 0, 0); hiss('bandpass', 380, 4200, 1.2, 0.6, 0.1, 0, 0, 0.35, 0.05); sweep('sine', 72, 30, 1.1, 0.2); },
+      update: function (g, t, u) {
+        if (dead || ducked) return;
+        var now = c.currentTime, I = 0.3 + 0.7 * g, mf = 55 * (1 - 0.16 * Math.sin(t * 0.9));
+        sub.frequency.setTargetAtTime(30 + 16 * u, now, 0.05); hold(sg.gain, 0.05 + 0.08 * I, now, 0.08);
+        m1.frequency.setTargetAtTime(mf, now, 0.1); m2.frequency.setTargetAtTime(mf * 1.006, now, 0.1);
+        fA.frequency.setTargetAtTime(420 + 240 * Math.sin(t * 1.3), now, 0.08); hold(mg.gain, 0.06 * I, now, 0.1);
+        nf.frequency.setTargetAtTime(500 + 3000 * g * (0.6 + 0.4 * Math.sin(t * 5)), now, 0.05); hold(ng.gain, 0.02 + 0.05 * I, now, 0.06);
+        if (pn) pn.pan.setTargetAtTime(Math.sin(t * (4 + 7 * u)) * 0.8, now, 0.02);                            // 원반이 도는 방향으로 소리도 회전 (점점 빨라짐)
+        rl.frequency.setTargetAtTime(120 + 1000 * u * u, now, 0.05); hold(rg.gain, 0.01 + 0.05 * u * u, now, 0.06);
+      },
+      pull: function (panX) { sweep('sine', 190, 560, 0.55, 0.028, 0, panX, 0.3, 0.3); },                      // 늘어나며 올라가는 음
+      eat: function (panX, i) {                                                                                // 삼킴: 떨어지는 음 + 빨려 드는 바람 + 내려가는 종소리
+        sweep('sine', 720 - Math.min(i, 8) * 40, 70, 0.3, 0.09, 0, panX, 0.3);
+        hiss('bandpass', 3500, 250, 1.6, 0.28, 0.1, 0, panX, 0.3);
+        fm([988, 880, 784, 740, 659, 587, 523][i % 7], 1.4, 5, 0.6, 0.035, 0.02, panX, 0.6);
+      },
+      chirp: function (dur) { chirp(dur, 0.22, 0, 0, 45); },
+      collapse: function () {
+        ducked = true; fade(0.012);
+        var t0 = c.currentTime;
+        if (musicDuckG) { musicDuckG.gain.cancelScheduledValues(t0); musicDuckG.gain.setValueAtTime(0.0001, t0); musicDuckG.gain.setTargetAtTime(0.12, t0 + 0.5, 0.35); }
+        bhCollapse(0, true);
+        sweep('sine', 90, 20, 2.4, 0.5, 0.02, 0, 0.3, 0.004);
+        [98, 146.8, 196, 246.9].forEach(function (f, i) { airy(f, 0.045, 0.08, i % 2 ? 0.5 : -0.5); });
+        [196, 293.7, 392, 587.3].forEach(function (f, i) { fm(f, 1, 2.4, 2.2, 0.06, 0.15 + i * 0.05, -0.6 + i * 0.4, 0.7); });
+      },
+      reborn: function () { [523.3, 659.3, 784, 1046.5].forEach(function (f, i) { fm(f, 1.4, 8, 1.8, 0.05, i * 0.08, -0.45 + i * 0.3, 0.8); }); },
+      stop: function () {
+        if (dead) return; dead = true; fade(0.03);
+        var t = c.currentTime; all.forEach(function (s) { try { s.stop(t + 0.25); } catch (e) { } });
+      }
+    };
+    setTimeout(h.stop, 10000);                                                                                 // 안전장치
+    return h;
+  }
+
   return {
+    bhCharge: bhCharge, bhPull: bhPull, bhCollapse: bhCollapse, bhUlt: bhUlt,
     meteorSummon: meteorSummon, meteorFall: meteorFall, meteorBreak: meteorBreak, meteorImpact: meteorImpact,
     novaUlt: novaUlt, warmNova: function () { reverb(); if (!crunch) crunch = makeDistortionCurve(400); },
     _tap: function () { var c = ensure(); if (!c) return null; var an = c.createAnalyser(); an.fftSize = 2048; compNode.connect(an); return an; },
@@ -1989,6 +2128,30 @@ var FX = (function () {
         c.restore();
       }
     });
+    // 블랙홀 광자 고리: 가는 고리(그림자 가장자리) + 렌즈로 휘어 위로 넘어온 원반 뒷면(위쪽 호가 두껍다) + 은은한 아인슈타인 고리
+    tex.lens = canvasTex(256, function (c, s) {
+      var h = s / 2, rp = s * 0.26; c.translate(h, h);
+      var g = c.createRadialGradient(0, 0, rp * 0.9, 0, 0, h);
+      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.08, 'rgba(255,255,255,0.32)'); g.addColorStop(0.45, 'rgba(255,255,255,0.07)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(0, 0, h, 0, 7); c.fill();
+      for (var i = 0; i < 180; i++) {
+        var a0 = i / 180 * Math.PI * 2, wgt = 0.22 + 0.78 * Math.pow(Math.max(0, -Math.sin(a0)), 1.5); // 캔버스는 y 가 아래 → 위쪽 = sin < 0
+        c.strokeStyle = 'rgba(255,255,255,' + (0.5 * wgt).toFixed(3) + ')'; c.lineWidth = 3 + 9 * wgt;
+        c.beginPath(); c.arc(0, 0, rp * 1.2 + 4 * wgt, a0, a0 + Math.PI / 80); c.stroke();
+      }
+      c.shadowColor = '#fff'; c.shadowBlur = 10; c.strokeStyle = '#fff'; c.lineWidth = 3.5;
+      c.beginPath(); c.arc(0, 0, rp, 0, Math.PI * 2); c.stroke();
+    });
+    // 바닥 소용돌이: 로그 나선 팔 3개 (중심으로 갈수록 가늘고 촘촘)
+    tex.swirl = canvasTex(256, function (c, s) {
+      var h = s / 2; c.translate(h, h); c.lineCap = 'round'; c.shadowColor = '#fff'; c.shadowBlur = 8;
+      function sp(arm, u) { var th = arm * 2.094 + u * 5.2, r = h * 0.95 * Math.exp(-u * 2.4); return [Math.cos(th) * r, Math.sin(th) * r]; }
+      for (var arm = 0; arm < 3; arm++) for (var j = 0; j < 60; j++) {
+        var u0 = j / 60, p0 = sp(arm, u0), p1 = sp(arm, (j + 1) / 60);
+        c.strokeStyle = 'rgba(255,255,255,' + (0.9 * (1 - u0 * 0.6) * Math.min(1, u0 * 6)).toFixed(3) + ')'; c.lineWidth = 2 + 10 * (1 - u0);
+        c.beginPath(); c.moveTo(p0[0], p0[1]); c.lineTo(p1[0], p1[1]); c.stroke();
+      }
+    });
   }
 
   // ---------------------------------------------------------------- 공유 지오메트리
@@ -2048,6 +2211,7 @@ var FX = (function () {
     geo.box = new THREE.BoxGeometry(1, 1, 1);
     geo.novaShell = new THREE.IcosahedronGeometry(1, 3); geo.pearlRing = pearlRingGeo(0.9, 96, 14); geo.pulsar = pulsarGeo(10);
     geo.rock = rockGeo(); geo.rim = new THREE.TorusGeometry(1, 0.22, 4, 16); geo.rim.rotateX(-Math.PI / 2);
+    geo.disk = new THREE.RingGeometry(0.35, 1, 96, 3); geo.disk.rotateX(-Math.PI / 2);   // 강착 원반 (XZ 평면, 안쪽 반지름 = 셰이더 uInner)
     geo.spike = new THREE.ConeGeometry(0.5, 1, 5); geo.spike.translate(0, 0.5, 0);
     geo.arrowShaft = new THREE.CylinderGeometry(0.02, 0.02, 0.9, 5); geo.arrowShaft.rotateX(Math.PI / 2);
     geo.arrowHead = new THREE.ConeGeometry(0.06, 0.2, 4); geo.arrowHead.rotateX(Math.PI / 2); geo.arrowHead.translate(0, 0, 0.55);
@@ -2089,7 +2253,7 @@ var FX = (function () {
   PointPool.prototype.spawn = function () {
     if (!this.free.length) return null;
     var p = this.items[this.free.pop()];
-    p.on = true; p.t = 0; p.home = null; p.done = null; p.swirl = 0; p.fadeIn = 0.06; p.delay = 0; p.twinkle = 0;
+    p.on = true; p.t = 0; p.home = null; p.done = null; p.swirl = 0; p.fadeIn = 0.06; p.delay = 0; p.twinkle = 0; p.orb = null;
     this.active++;
     return p;
   };
@@ -2113,26 +2277,29 @@ var FX = (function () {
       p.t += dt;
       var k = p.t / p.life;
       if (k >= 1) { var d = p.done; this.kill(p); if (d) d(); continue; }
-      if (p.home) { // 목표를 향해 가속 (전리품 구슬)
-        var hk = Math.max(0, p.t - p.homeAfter);
-        if (hk > 0) {
-          var tp = p.home.isObject3D ? p.home.getWorldPosition(V) : p.home;
-          var ty = tp.y + (p.homeY || 0);
-          var dx = tp.x - p.x, dy = ty - p.y, dz = tp.z - p.z, L = Math.sqrt(dx * dx + dy * dy + dz * dz);
-          if (L < 0.35) { var d2 = p.done; this.kill(p); if (d2) d2(); continue; }
-          var sp = 6 + hk * 26, bl = Math.min(1, hk * 5);
-          p.vx += (dx / L * sp - p.vx) * bl; p.vy += (dy / L * sp - p.vy) * bl; p.vz += (dz / L * sp - p.vz) * bl;
-          p.life = Math.max(p.life, p.t + 0.3);
+      if (p.orb) orbStep(p, k, dt);  // 강착 입자: 블랙홀 둘레를 케플러 나선으로
+      else {
+        if (p.home) { // 목표를 향해 가속 (전리품 구슬)
+          var hk = Math.max(0, p.t - p.homeAfter);
+          if (hk > 0) {
+            var tp = p.home.isObject3D ? p.home.getWorldPosition(V) : p.home;
+            var ty = tp.y + (p.homeY || 0);
+            var dx = tp.x - p.x, dy = ty - p.y, dz = tp.z - p.z, L = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (L < 0.35) { var d2 = p.done; this.kill(p); if (d2) d2(); continue; }
+            var sp = 6 + hk * 26, bl = Math.min(1, hk * 5);
+            p.vx += (dx / L * sp - p.vx) * bl; p.vy += (dy / L * sp - p.vy) * bl; p.vz += (dz / L * sp - p.vz) * bl;
+            p.life = Math.max(p.life, p.t + 0.3);
+          }
         }
+        if (p.swirl) { // 세로축(ox, oz) 주위 회전
+          var rx = p.x - p.ox, rz = p.z - p.oz, ang = p.swirl * dt, cs = Math.cos(ang), sn = Math.sin(ang);
+          p.x = p.ox + rx * cs - rz * sn; p.z = p.oz + rx * sn + rz * cs;
+        }
+        var dr = Math.max(0, 1 - p.drag * dt);
+        p.vx *= dr; p.vy = p.vy * dr - p.grav * dt; p.vz *= dr;
+        p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+        if (p.floor !== undefined && p.y < p.floor) { p.y = p.floor; p.vy *= -0.35; p.vx *= 0.6; p.vz *= 0.6; }
       }
-      if (p.swirl) { // 세로축(ox, oz) 주위 회전
-        var rx = p.x - p.ox, rz = p.z - p.oz, ang = p.swirl * dt, cs = Math.cos(ang), sn = Math.sin(ang);
-        p.x = p.ox + rx * cs - rz * sn; p.z = p.oz + rx * sn + rz * cs;
-      }
-      var dr = Math.max(0, 1 - p.drag * dt);
-      p.vx *= dr; p.vy = p.vy * dr - p.grav * dt; p.vz *= dr;
-      p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
-      if (p.floor !== undefined && p.y < p.floor) { p.y = p.floor; p.vy *= -0.35; p.vx *= 0.6; p.vz *= 0.6; }
       var a = (p.t < p.fadeIn ? p.t / p.fadeIn : 1) * (1 - k) * (p.fadeOutPow ? Math.pow(1 - k, p.fadeOutPow) : 1) * p.alpha;
       if (p.twinkle) a *= 0.55 + 0.45 * Math.sin(p.t * p.twinkle + p.i);
       var j = i * 3, c4 = i * 4;
@@ -2193,6 +2360,46 @@ var FX = (function () {
     pool.dirty = true;
   }
   var _q = new THREE.Quaternion(), _z = new THREE.Vector3(0, 0, 1);
+
+  // ---- 강착 입자 (블랙홀): 원반 좌표계 B = { c(중심 — 살아 있는 참조라 움직이는 대상도 따라감), u·w(원반면), n(축) } 에서
+  //      반지름은 줄고(r ∝ (1-k)^pw) 각속도는 케플러처럼 안쪽일수록 빨라져(ω ∝ r^-1.5) 소용돌이치며 지평선으로 떨어진다
+  function orbStep(p, k, dt) {
+    var ob = p.orb, rr = ob.rin + (ob.r0 - ob.rin) * Math.pow(1 - k, ob.pw);
+    ob.th += ob.w0 * Math.min(7, Math.pow(Math.max(rr / ob.r0, 0.05), -1.5)) * dt;
+    var cs = Math.cos(ob.th) * rr, sn = Math.sin(ob.th) * rr, hh = ob.h0 * (1 - k) * (1 - k), c = ob.c;
+    p.x = c.x + ob.u.x * cs + ob.w.x * sn + ob.n.x * hh;
+    p.y = c.y + ob.u.y * cs + ob.w.y * sn + ob.n.y * hh;
+    p.z = c.z + ob.u.z * cs + ob.w.z * sn + ob.n.z * hh;
+  }
+  var _o1 = new THREE.Vector3();
+  // o: n, r:[a,b](시작 반지름) 또는 from(이 지점에서 출발 — 조석 흐름)+spread, h(축 방향 높이), rin(끝 반지름), w0(각속도), pw, life, size, sizeEnd, color, colorEnd, alpha, delay, twinkle, pool
+  function accrete(B, o) {
+    var pool = o.pool || glow; if (!pool || !scene) return;
+    var n = o.n || 1;
+    if (density !== 1 && n > 1) n = Math.max(1, Math.round(n * density));
+    for (var i = 0; i < n; i++) {
+      var p = pool.spawn(); if (!p) break;
+      var ob = p.orbS || (p.orbS = {}); p.orb = ob;
+      ob.c = B.c; ob.u = B.u; ob.w = B.w; ob.n = B.n;
+      if (o.from) {
+        var sr = o.spread || 0;
+        _o1.set(o.from.x + rnd(-sr, sr), o.from.y + rnd(-sr, sr), o.from.z + rnd(-sr, sr)).sub(B.c);
+        ob.h0 = _o1.dot(B.n); _o1.addScaledVector(B.n, -ob.h0);
+        ob.r0 = Math.max(0.05, _o1.length()); ob.th = Math.atan2(_o1.dot(B.w), _o1.dot(B.u));
+      } else { ob.r0 = pick(o.r); ob.th = rnd(0, 6.283); ob.h0 = pick(o.h || 0) * (Math.random() < 0.5 ? -1 : 1); }
+      ob.rin = Math.min(o.rin || 0, ob.r0 * 0.9); ob.w0 = pick(o.w0 || 2.5); ob.pw = o.pw || 1.4;
+      p.life = pick(o.life || 0.6); p.delay = o.delay ? pick(o.delay) : 0;
+      p.s0 = pick(o.size || 0.15); p.s1 = p.s0 * (o.sizeEnd === undefined ? 0.3 : o.sizeEnd); p.sizeEase = false;
+      var c0 = Array.isArray(o.color) ? o.color[(Math.random() * o.color.length) | 0] : (o.color === undefined ? 0xffffff : o.color);
+      C.setHex(c0); C2.setHex(o.colorEnd === undefined ? c0 : o.colorEnd);
+      p.r0 = C.r; p.g0 = C.g; p.b0 = C.b; p.r1 = C2.r; p.g1 = C2.g; p.b1 = C2.b;
+      p.alpha = o.alpha === undefined ? 1 : o.alpha; p.fadeOutPow = 0; p.twinkle = o.twinkle || 0;
+      if (o.fadeIn !== undefined) p.fadeIn = o.fadeIn;
+      p.vx = p.vy = p.vz = 0; p.grav = 0; p.drag = 0; p.floor = undefined;
+      orbStep(p, 0, 0);
+    }
+    pool.dirty = true;
+  }
 
   // ---------------------------------------------------------------- 큐브 파편 풀 (InstancedMesh)
   function ChunkPool(n) {
@@ -2581,13 +2788,15 @@ var FX = (function () {
       var nc = mesh(geo.sphere, 0xffffff, {}); nc.scale.setScalar(0.12); grp.add(nc);
       var nsh = mesh(geo.sphere, NOVA_BLUE, { opacity: 0.5 }); nsh.scale.setScalar(0.26); grp.add(nsh);
       var nr = mesh(geo.ringThin, NOVA_PINK, { vc: true, opacity: 0.9 }); nr.scale.setScalar(0.42); nr.rotation.x = Math.PI / 2; grp.add(nr);
+    } else if (kind === 'blackhole') {                    // 날아가는 특이점: 검은 그림자 + 작은 강착 원반 + 광자 고리
+      var bs = singularity({ spin: 3.4 }); bs.set(0.13, 1, 3.4); grp.add(bs.grp); grp.userData.bh = bs;
     } else {
       var r = kind === 'fireball' ? 0.3 : 0.2;
       var core = mesh(geo.sphere, E.c1, {}); core.scale.setScalar(r * 0.7); grp.add(core);
       var sh = mesh(geo.sphere, E.c2, { opacity: 0.6 }); sh.scale.setScalar(r * 1.25); grp.add(sh);
     }
-    var halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.dot, color: E.glow, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
-    var hs = kind === 'arrow' ? 0.9 : kind === 'fireball' ? 2.4 : kind === 'nova' ? 2.3 : 1.7; halo.scale.set(hs, hs, 1); grp.add(halo);
+    var halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.dot, color: kind === 'blackhole' ? BH_VIO : E.glow, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    var hs = kind === 'arrow' ? 0.9 : kind === 'fireball' ? 2.4 : kind === 'nova' ? 2.3 : kind === 'blackhole' ? 2.0 : 1.7; halo.scale.set(hs, hs, 1); grp.add(halo);
     grp.position.copy(from); grp.userData.keep = true;
     scene.add(grp);
     projectiles.push({ obj: grp, from: from.clone(), to: to.clone(), t: 0, dur: o.dur || 0.22, arc: o.arc === undefined ? 0.25 : o.arc, kind: kind, E: E, el: o.el, prism: o.prism, onArrive: o.onArrive, acc: 0, spin: rnd(0, 6) });
@@ -2599,13 +2808,23 @@ var FX = (function () {
       V.copy(p.from).lerp(p.to, k); V.y += Math.sin(k * Math.PI) * p.arc;
       V2.copy(p.from).lerp(p.to, Math.min(1, k + 0.05)); V2.y += Math.sin(Math.min(1, k + 0.05) * Math.PI) * p.arc;
       p.obj.position.copy(V); if (k < 1) p.obj.lookAt(V2);
-      if (p.kind !== 'arrow') { p.spin += dt * 9; p.obj.children[0].rotation.set(p.spin, p.spin * 0.7, 0); }
+      if (p.obj.userData.bh) p.obj.userData.bh.tick(dt, 2.5);
+      else if (p.kind !== 'arrow') { p.spin += dt * 9; p.obj.children[0].rotation.set(p.spin, p.spin * 0.7, 0); }
       // 꼬리 입자
       p.acc += dt;
       while (p.acc > 0.012) {
         p.acc -= 0.012;
         if (p.kind === 'fireball') emitTo(glow, { pos: V, n: 2, spread: 0.14, speed: [0.2, 1.2], up: [0.3, 1.4], life: [0.25, 0.5], size: [0.3, 0.5], sizeEnd: 0.1, color: [p.E.c1, p.E.c2], colorEnd: 0x7a1a08, drag: 1 });
         else if (p.kind === 'nova') emitTo(glow, { pos: V, n: 2, spread: 0.07, speed: [0.3, 1.5], life: [0.25, 0.5], size: [0.15, 0.28], sizeEnd: 0, color: CASA, drag: 1.4, twinkle: 20 });
+        else if (p.kind === 'blackhole') {                  // 두 가닥 나선 꼬리 (호박색 · 보라)
+          p.hel = (p.hel || 0) + 0.6;
+          _b1.copy(p.to).sub(p.from); if (_b1.lengthSq() < 1e-8) _b1.set(0, 0, 1); _b1.normalize();
+          _b2.crossVectors(_b1, UP); if (_b2.lengthSq() < 1e-6) _b2.set(1, 0, 0); _b2.normalize(); _b3.crossVectors(_b2, _b1);
+          for (var hx = -1; hx <= 1; hx += 2) {
+            _b4.copy(V).addScaledVector(_b2, Math.cos(p.hel) * 0.2 * hx).addScaledVector(_b3, Math.sin(p.hel) * 0.2 * hx);
+            emitTo(glow, { pos: _b4, n: 1, spread: 0.02, speed: [0.2, 0.8], life: [0.25, 0.45], size: [0.14, 0.24], sizeEnd: 0, color: hx > 0 ? [0xffe2b0, BH_AMB] : [BH_VIO, BH_LIL], drag: 1.5 });
+          }
+        }
         else if (p.kind === 'arrow') emitTo(glow, { pos: V, n: 1, spread: 0.05, speed: [0, 0.6], life: [0.18, 0.4], size: [0.1, 0.2], sizeEnd: 0, color: [p.E.c1, p.E.c2], prism: p.prism, twinkle: p.el === 'star' ? 30 : 0 });
         else emitTo(glow, { pos: V, n: 2, spread: 0.08, speed: [0.2, 1], life: [0.2, 0.42], size: [0.16, 0.3], sizeEnd: 0, color: [p.E.c1, p.E.c2], prism: p.prism });
         if (p.el === 'nature' && Math.random() < 0.4) chunkBurst({ pos: V, n: 1, spread: 0.05, speed: [0.3, 1], up: [0.2, 1], size: [0.1, 0.15], shape: [1, 0.15, 0.6], color: [0x5ec84a, 0x8ade5a, 0x3c9a3a], life: [0.7, 1.1], grav: 3, flutter: 5, bounce: 0 });
@@ -3105,6 +3324,239 @@ void main() {
     shockRing(pos, 0xffa040, 0.1, 1.2, 0.3, { thin: true, y: pos.y });
   }
 
+  // ================================================================ 블랙홀 (가이아 BH3)
+  // 근거: ESA Gaia(2024) — Gaia BH3: 태양 33배, 우리 은하에서 가장 무거운 항성 블랙홀. 물질을 먹지 않는 '잠든' 블랙홀이라 짝별의 흔들림으로 발견
+  //      EHT(M87*·궁수자리 A*) — 검은 그림자를 두른 밝은 광자 고리, 다가오는 쪽이 밝은 도플러 비밍
+  //      NASA 조석 붕괴(TDE) — 다가온 별은 조석력에 국수처럼 늘어나(스파게티화) 원반으로 감겨 들며 순간 밝게 타오름
+  //      NASA/Hubble M87 제트 — 광속에 가깝게 양쪽으로 뿜어지는 플라스마, 제트 속을 달리는 밝은 매듭(knot)
+  var BH_VIO = 0x8a5cff, BH_LIL = 0xb48cff, BH_AMB = 0xffa860, BH_JET = 0x7ab8ff, BH_GLOW = [0xffffff, 0xffe2b0, BH_AMB, BH_VIO, BH_LIL];
+  var _b1 = new THREE.Vector3(), _b2 = new THREE.Vector3(), _b3 = new THREE.Vector3(), _b4 = new THREE.Vector3();
+  // 강착 원반 셰이더: 케플러 차등 회전(ω ∝ r^-1.5)으로 감기는 난류 줄무늬 + 도플러 비밍(시선 쪽으로 다가오는 쪽이 밝다). 노이즈 = 위 ashima snoise
+  var DISK_VS = `
+varying vec2 vP; varying float vBeam;
+void main() {
+  vP = position.xz;
+  vec4 wp = modelMatrix * vec4(position, 1.0);
+  vec3 tang = normalize((modelMatrix * vec4(-position.z, 0.0, position.x, 0.0)).xyz);
+  vBeam = dot(tang, normalize(cameraPosition - wp.xyz));
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}`;
+  var DISK_FS = `
+uniform float uTime; uniform float uOpacity; uniform float uSpin; uniform float uHeat;
+uniform vec3 uHot; uniform vec3 uMid; uniform vec3 uCool;
+varying vec2 vP; varying float vBeam;
+void main() {
+  float r = length(vP), x = clamp((r - 0.35) / 0.65, 0.0, 1.0);
+  float sw = atan(vP.y, vP.x) - uTime * uSpin * pow(max(r, 0.35), -1.5);
+  float n = snoise(vec3(cos(sw) * 1.7, sin(sw) * 1.7, r * 7.0 - uTime * 0.5)) * 0.5 + 0.5;
+  float fil = 0.55 + 0.45 * sin(sw * 3.0 + r * 34.0);
+  float heat = pow(1.0 - x, 1.7) * uHeat;
+  vec3 col = mix(uCool, uMid, smoothstep(0.0, 0.5, heat));
+  col = mix(col, uHot, smoothstep(0.5, 1.0, heat));
+  float beam = pow(clamp(1.0 + 0.65 * vBeam, 0.2, 1.8), 2.0);
+  float edge = smoothstep(0.0, 0.06, x) * (1.0 - smoothstep(0.6, 1.0, x));
+  float I = (0.35 + 1.2 * n * fil) * (0.5 + 1.6 * heat) * beam * edge;
+  gl_FragColor = vec4(col * I, uOpacity);
+}`;
+  var diskBase = null, horizonMat = null;
+  function diskMat(o) {                                                 // 복제본이 같은 셰이더 프로그램을 공유 (재컴파일 없음)
+    o = o || {};
+    if (!diskBase) diskBase = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 }, uOpacity: { value: 1 }, uSpin: { value: 2.6 }, uHeat: { value: 1 },
+        uHot: { value: new THREE.Color(0xfff6e8) }, uMid: { value: new THREE.Color(0xffa850) }, uCool: { value: new THREE.Color(0x8a3cff) }
+      },
+      vertexShader: DISK_VS, fragmentShader: NOISE3D + DISK_FS,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide
+    });
+    var m = diskBase.clone();
+    if (o.spin !== undefined) m.uniforms.uSpin.value = o.spin;
+    return m;
+  }
+  function addSprite(map, color, order, opacity) {
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: map, color: color, transparent: true, opacity: opacity === undefined ? 1 : opacity, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    s.renderOrder = order; return s;
+  }
+  // 블랙홀 한 개: 검은 그림자(지평선) + 강착 원반 + 광자 고리 + 주변을 어둡게 누르는 그림자 + 보라 후광
+  // 반환 { grp, basis(강착 입자용 원반 좌표계), set(R 지평선 반지름, op 밝기, dk 원반 배율, heat 원반 온도), tick(dt, 회전 배속) }
+  function singularity(o) {
+    o = o || {};
+    if (!horizonMat) horizonMat = new THREE.MeshBasicMaterial({ color: 0x000000, fog: false });
+    var grp = new THREE.Group(), q = o.tilt || new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd(-0.35, 0.35), rnd(0, 6.28), rnd(-0.35, 0.35)));
+    var hz = new THREE.Mesh(o.hi ? geo.novaShell : geo.sphere, horizonMat); hz.frustumCulled = false; grp.add(hz);
+    var dark = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.dot, color: 0x000000, transparent: true, opacity: 0.6, depthWrite: false, fog: false }));
+    dark.renderOrder = 5; grp.add(dark);
+    var dk = new THREE.Mesh(geo.disk, diskMat({ spin: o.spin })); dk.quaternion.copy(q); dk.frustumCulled = false; dk.renderOrder = 6; grp.add(dk);
+    var lens = addSprite(tex.lens, 0xffe6c4, 9); grp.add(lens);
+    var halo = addSprite(tex.dot, BH_VIO, 8); grp.add(halo);
+    var U = dk.material.uniforms, time = rnd(0, 30);
+    return {
+      grp: grp,
+      basis: diskBasis(q, grp.position),
+      set: function (R, op, dkK, heat) {
+        var r = Math.max(0.0001, R), a = Math.min(1, op);
+        hz.scale.setScalar(r); dark.scale.setScalar(r * 6); dk.scale.setScalar(r * (dkK || 3.3)); lens.scale.setScalar(r * 4.1); halo.scale.setScalar(r * 8);
+        U.uOpacity.value = op; U.uHeat.value = heat || 1;
+        lens.material.opacity = a; halo.material.opacity = 0.4 * a; dark.material.opacity = 0.6 * a;
+      },
+      tick: function (dt, sp) { time += dt * (sp || 1); U.uTime.value = time; }
+    };
+  }
+  function diskBasis(q, c) { return { c: c, u: new THREE.Vector3(1, 0, 0).applyQuaternion(q), w: new THREE.Vector3(0, 0, 1).applyQuaternion(q), n: new THREE.Vector3(0, 1, 0).applyQuaternion(q) }; }
+  function easeBack(x) { return 1 + 2.7 * Math.pow(x - 1, 3) + 1.7 * Math.pow(x - 1, 2); }
+  // 깨어나는 특이점: 먼 곳의 빛이 무기 끝으로 소용돌이치며 떨어지고, 휘어진 시공간 고리가 오그라든다 (무기 끝을 따라감)
+  function bhCharge(getPos, dur, o) {
+    o = o || {};
+    var sz = o.size || 1, cv = new THREE.Vector3(), q = new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd(-0.4, 0.4), 0, rnd(-0.4, 0.4))), B = diskBasis(q, cv);
+    var grp = new THREE.Group(), lens = addSprite(tex.lens, BH_LIL, 9), halo = addSprite(tex.dot, BH_VIO, 8);
+    var ring = mesh(geo.ringThin, BH_AMB, { vc: true, opacity: 0 }); ring.quaternion.copy(q);
+    grp.add(lens); grp.add(ring); grp.add(halo);
+    var acc = 0;
+    addTransient(grp, dur, function (ob, k, dt) {
+      getPos(cv); ob.position.copy(cv);
+      var e = k * k;
+      lens.scale.setScalar((3.6 - 3.0 * e) * sz); lens.material.opacity = 0.75 * Math.min(1, k * 3);
+      ring.scale.setScalar((2.6 * (1 - e) + 0.15) * sz); ring.material.opacity = 0.9 * Math.min(1, k * 4);
+      halo.scale.setScalar((0.8 + 1.8 * k) * sz); halo.material.opacity = 0.3 + 0.45 * k;
+      acc += dt;
+      while (acc > 0.018) { acc -= 0.018; accrete(B, { n: 2, r: [0.9 * sz, 1.8 * sz], h: [0, 0.5 * sz], rin: 0.06, w0: [2.5, 4], pw: 1.3, life: [0.3, 0.5], size: [0.1, 0.2], sizeEnd: 0.4, color: BH_GLOW }); }
+    });
+  }
+  // 사출: 시공간이 출렁이는 고리 + 진행 방향 링 + 불티
+  function bhLaunch(pos, dir) {
+    sprite(tex.lens, BH_LIL, 3.8, 0.3, { pos: pos, from: 0.1, noDepth: true });
+    sprite(tex.star, 0xffffff, 2.8, 0.16, { pos: pos, from: 0.2, rot: rnd(0, 1.5), noDepth: true });
+    shockRing(pos, BH_VIO, 0.15, 1.7, 0.34, { thin: true, y: pos.y, tiltTo: dir });
+    shockRing(pos, BH_AMB, 0.1, 1.1, 0.26, { thin: true, y: pos.y, tiltTo: dir, delay: 0.04 });
+    flash(pos, BH_LIL, 2.6, 0.25);
+    emitTo(glow, { pos: pos, n: 16, dir: dir, cone: 0.6, speed: [3, 8], life: [0.2, 0.45], size: [0.1, 0.2], sizeEnd: 0, color: BH_GLOW, drag: 2.5 });
+  }
+  // 조석 붕괴 (타격 전반): 적 앞에서 특이점이 열려 원반이 돌고, 적의 몸이 국수처럼 늘어난 흐름이 되어 감겨 든다. 끝에 한 점으로 오그라듦
+  // o: R, dur, ground, victim(적 몸통 위치), vr(몸 크기), colors
+  function bhOpen(P, o) {
+    o = o || {};
+    var dur = o.dur || 0.45, R = o.R || 0.28, bs = singularity({ spin: 3.2 }), B = bs.basis, acc = 0;
+    var gr = (o.ground || new THREE.Vector3(P.x, 0, P.z)).clone(), victim = o.victim ? o.victim.clone() : null;
+    bs.grp.position.copy(P);
+    decal(tex.swirl, BH_VIO, gr, R * 12, dur + 0.3, { spin: -5, grow: true, growSpeed: 4, hold: 0.7, opacity: 0.85 });
+    sprite(tex.lens, BH_LIL, R * 4.1, 0.25, { pos: P, from: 3.2, opacity: 0.7 });           // 공간이 안으로 오그라드는 고리
+    flash(P, BH_VIO, 2.2, dur);
+    addTransient(bs.grp, dur, function (ob, k, dt) {
+      var g = k < 0.28 ? easeBack(k / 0.28) : k > 0.86 ? Math.max(0, 1 - (k - 0.86) / 0.14) : 1;
+      bs.set(R * g * (1 + Math.sin(k * 42) * 0.05), Math.min(1, k * 5), 3.3 + (k > 0.86 ? (k - 0.86) * 20 : 0), 1 + k * 0.8);
+      bs.tick(dt, 1 + k * 4);
+      acc += dt;
+      while (acc > 0.016) {
+        acc -= 0.016;
+        accrete(B, { n: 2, r: [R * 2.4, R * 5], h: [0, R], rin: R * 1.1, w0: [3, 5], pw: 1.2, life: [0.22, 0.38], size: [0.1, 0.22], sizeEnd: 0.3, color: BH_GLOW });
+        if (victim) accrete(B, { n: 2, from: victim, spread: o.vr || 0.35, rin: R * 1.1, w0: [2, 3], pw: 1.6, life: [0.28, 0.42], size: [0.12, 0.24], sizeEnd: 0.25, color: o.colors || [0xffffff], colorEnd: BH_AMB });
+      }
+    });
+    return bs;
+  }
+  // 상대론적 제트: 축을 따라 양쪽으로 곧게 뻗는 빛기둥 + 그 안을 달리는 밝은 매듭. 아래쪽 제트는 바닥에 부딪혀 퍼진다
+  function jets(P, axis, len, width, life, o) {
+    o = o || {};
+    [1, -1].forEach(function (sd) {
+      var d = axis.clone().multiplyScalar(sd).normalize(), L = len, floorHit = false;
+      if (d.y < -0.05) { var toFloor = (P.y - (o.floor || 0)) / -d.y; if (toFloor < len) { L = toFloor; floorHit = true; } }
+      if (L < 0.15) return;
+      var q = new THREE.Quaternion().setFromUnitVectors(UP, d);
+      [[BH_VIO, width * 4.2, 0.35], [BH_JET, width * 2.2, 0.6], [0xffffff, width, 1]].forEach(function (b, bi) {
+        var m = mesh(geo.pillar, b[0], { vc: true, opacity: b[2] });
+        m.position.copy(P); m.quaternion.copy(q);
+        addTransient(m, life * (bi === 2 ? 0.75 : 1), function (ob, k) {
+          var ext = 1 - Math.pow(1 - Math.min(1, k * 7), 3), wv = b[1] * (1 + Math.sin(k * 70 + bi * 2) * 0.12) * (1 - k * 0.6);
+          ob.scale.set(wv, Math.max(0.001, L * ext), wv);
+          ob.material.opacity = b[2] * (1 - k * k);
+        });
+      });
+      var sp = L / 0.3;
+      for (var kn = 0; kn < (o.lite ? 2 : 4); kn++) emitTo(glow, { pos: P, n: 1, vel: _b1.copy(d).multiplyScalar(sp * rnd(0.7, 1)), life: 0.3, size: width * 4, sizeEnd: 0.5, color: kn % 2 ? BH_JET : 0xffffff, delay: kn * 0.06, fadeIn: 0.02 });   // 매듭
+      emitTo(glow, { pos: P, n: o.lite ? 8 : 16, dir: d, cone: 0.08, speed: [sp * 0.5, sp * 1.1], life: [0.2, 0.35], size: [0.08, 0.16], sizeEnd: 0, color: [0xffffff, BH_JET, BH_LIL], drag: 1 });
+      var end = P.clone().addScaledVector(d, L);
+      if (floorHit) {
+        shockRing(end, BH_JET, 0.3, width * 22, 0.5, {});
+        emitTo(glow, { pos: end.setY(0.1), n: o.lite ? 8 : 16, dir: UP, cone: 1.3, speed: [2, 6], life: [0.3, 0.6], size: [0.1, 0.2], sizeEnd: 0, color: [0xffffff, BH_JET], grav: 10, floor: 0.05 });
+      } else shockRing(end, BH_JET, 0.1, width * 8, 0.35, { thin: true, y: end.y, tiltTo: d, delay: life * 0.12 });   // 제트 머리의 충격파
+    });
+  }
+  // 붕괴 (타격): 특이점이 한 점으로 사라지는 섬광 → 쌍둥이 제트 → 플라스마 거품 → 바닥 충격파 + 중력파 물결
+  // o: ground, power, lite, big(궁극기), axis
+  function bhCollapse(P, o) {
+    o = o || {};
+    var pw = o.power || 1, lite = !!o.lite, big = !!o.big, gr = (o.ground || new THREE.Vector3(P.x, 0, P.z)).clone(), c = P.clone(), pc = Math.min(pw, 2);
+    sprite(tex.dot, 0xffffff, (big ? 5 : 3.6) * pw, 0.2, { pos: c, from: 0.1, noDepth: true });
+    sprite(tex.star, 0xffe6c4, 4.6 * pw, 0.28, { pos: c, from: 0.15, rot: rnd(0, 1.5), noDepth: true, spin: 2 });
+    sprite(tex.lens, BH_LIL, 7 * pw, 0.55, { pos: c, from: 0.08, noDepth: true });               // 퍼져 나가는 시공간 고리
+    if (big) sprite(tex.lens, BH_AMB, 12 * pw, 0.9, { pos: c, from: 0.05, noDepth: true, delay: 0.08 });
+    flash(c, BH_LIL, Math.min(9, 5 * pw), 0.5);
+    if (!lite && hooks.screenFlash) hooks.screenFlash('#f2e6ff', big ? 0.5 : 0.24);
+    shake((lite ? 0.35 : 0.7) * pc);
+    jets(c, o.axis || _b2.set(rnd(-0.12, 0.12), 1, rnd(-0.12, 0.12)).normalize(), (lite ? 4.5 : 7) * pw, 0.16 * pw, big ? 1.1 : lite ? 0.5 : 0.7, { floor: gr.y, lite: lite });
+    novaShell(c, 0.15, 1.5 * pw, 0.6, { pal: [0xffffff, 0xffc070, 0x8a3cff, BH_LIL], amp: 0.3, opacity: lite ? 0.55 : 0.9 });   // 달궈진 플라스마 거품
+    emitTo(glow, { pos: c, n: lite ? 18 : big ? 110 : 40, speed: [3 * pc, 9 * pc], life: [0.4, 0.9], size: [0.12, 0.26], sizeEnd: 0, color: BH_GLOW, drag: 2.2, twinkle: 18 });
+    shockRing(gr, BH_AMB, 0.3, 3.2 * pw, 0.5, {});
+    for (var i = 0; i < (lite ? 2 : big ? 6 : 4); i++) shockRing(gr, i % 2 ? BH_VIO : 0xcfe0ff, 0.4, (2 + i * 0.9) * pw, 0.7 + i * 0.05, { thin: true, opacity: 0.6, delay: 0.06 + i * 0.09 });   // 중력파 물결
+    decal(tex.scorch, 0x000000, gr, 1.8 * pw, 2.6, { normal: true, opacity: 0.6, hold: 0.6 });
+    decal(tex.swirl, BH_AMB, gr, 3 * pw, 0.9, { spin: -3, hold: 0.3, opacity: 0.7 });
+    if (!lite) emitTo(smoke, { pos: gr, n: big ? 16 : 8, spread: 0.6 * pc, spreadY: 0.1, speed: [1, 3.5], up: [0.2, 1], life: [0.8, 1.4], size: [0.8, 1.4], sizeEnd: 2.4, sizeEase: true, color: 0x2a1a44, alpha: 0.4, drag: 2 });
+    if (big) {
+      novaShell(c, 0.4, 5.2, 1.1, { pal: [0xffffff, 0xffe2b0, 0xa05aff, BH_AMB], amp: 0.14, opacity: 0.7, delay: 0.03 });
+      chunkBurst({ pos: new THREE.Vector3(gr.x, 0.3, gr.z), n: 24, spread: 2.5, speed: [2, 6], up: [4, 9], size: [0.14, 0.28], color: [0x2a2438, 0x4a3a60, BH_AMB], life: [1.2, 1.8] });
+    }
+  }
+  // 궁극기 블랙홀: 무기 끝에서 떠올라 하늘에 지평선을 연다 → 바닥 먼지·잔해가 소용돌이치며 빨려 올라감 → life 에 한 점으로 붕괴
+  // o: from, rise, open, life, R, ground, radius. 반환 { basis, pull(적 위치, 시간, 색) = 조석 흐름 시작, eat(적 위치, 색) = 삼킨 순간 }
+  function bhUltHole(center, o) {
+    o = o || {};
+    var from = (o.from || center).clone(), C0 = center.clone(), R = o.R || 1.2, rise = o.rise || 0.45, open = o.open || 0.95, life = o.life || 2.4;
+    var gnd = (o.ground || new THREE.Vector3(center.x, 0, center.z)).clone(), rad = o.radius || 7, full = density >= 0.7;
+    var bs = singularity({ spin: 1.8, hi: true, tilt: new THREE.Quaternion().setFromEuler(new THREE.Euler(0.22, 0, -0.12)) }), B = bs.basis;
+    var feeds = [], emT = 0, dustT = 0, lightT = 0;
+    decal(tex.swirl, BH_VIO, gnd, rad * 1.7, life + 0.5, { grow: true, growSpeed: 1.4, spin: -1.4, hold: 0.85, opacity: 0.9, rot: 0 });
+    bs.grp.position.copy(from);
+    addTransient(bs.grp, life, function (ob, k, dt) {
+      var t = k * life;
+      if (t < rise) ob.position.lerpVectors(from, C0, 1 - Math.pow(1 - t / rise, 2)); else ob.position.copy(C0);
+      var gx = Math.min(1, Math.max(0, (t - rise) / (open - rise))), u = Math.max(0, (t - open) / Math.max(0.01, life - open));
+      var g = 0.14 + (R - 0.14) * (t < rise ? 0 : easeBack(gx));
+      if (t > life - 0.14) g *= Math.max(0, (life - t) / 0.14);             // 마지막 순간 한 점으로
+      bs.set(g * (1 + Math.sin(t * 9) * 0.02), 1, 3.4 + u * 0.8, 1 + u * 0.9);
+      bs.tick(dt, 1 + u * 3);
+      emT += dt;
+      while (emT > 0.016) {
+        emT -= 0.016;
+        if (t > rise) accrete(B, { n: full ? 3 : 2, r: [R * 2.6, R * 6], h: [0, R * 1.5], rin: R * 1.1, w0: [1.4, 2.4], pw: 1.25, life: [0.55, 0.9], size: [0.14, 0.3], sizeEnd: 0.3, color: BH_GLOW });
+        for (var fi = feeds.length - 1; fi >= 0; fi--) {                  // 조석 흐름: 늘어나는 적의 몸에서 원반으로
+          var f = feeds[fi]; f.t += 0.016;
+          if (f.t > f.dur) { feeds.splice(fi, 1); continue; }
+          accrete(B, { n: 2, from: f.from, spread: 0.35, rin: R * 1.1, w0: [1.2, 2], pw: 1.7, life: [0.45, 0.7], size: [0.16, 0.28], sizeEnd: 0.3, color: f.colors, colorEnd: BH_AMB });
+        }
+      }
+      dustT += dt;
+      if (t > rise && dustT > 0.05) {                                        // 바닥 먼지가 소용돌이 기둥이 되어 빨려 올라감
+        dustT = 0;
+        var a = rnd(0, 6.283), rr = rnd(1.2, rad);
+        _b3.set(gnd.x + Math.cos(a) * rr, 0.2, gnd.z + Math.sin(a) * rr);
+        accrete(B, { pool: smoke, from: _b3, spread: 0.2, rin: R * 1.2, w0: [0.8, 1.3], pw: 1.8, life: [0.9, 1.3], size: [0.6, 1.0], sizeEnd: 0.4, color: 0x3a2458, alpha: 0.4 });
+        if (full) chunkBurst({ pos: _b3, n: 1, spread: 0.3, speed: [0.2, 0.8], up: [1.5, 3.5], grav: -3, bounce: 0, life: [0.8, 1.3], size: [0.08, 0.16], color: [0x2a2438, 0x4a3a60, 0x6a5a80] });
+      }
+      lightT += dt;
+      if (lightT > 0.12) { lightT = 0; flash(ob.position, BH_LIL, 1.5 + 3 * gx, 0.25); }   // 원반 빛이 바닥을 물들임 (높음 품질)
+    });
+    return {
+      basis: B,
+      pull: function (p, dur, colors) { feeds.push({ from: p.clone(), t: 0, dur: dur, colors: colors }); },
+      eat: function (p, colors) {
+        accrete(B, { n: 18, from: p, spread: 0.5, rin: R * 1.1, w0: [1.6, 2.6], pw: 1.5, life: [0.35, 0.55], size: [0.18, 0.32], sizeEnd: 0.3, color: colors, colorEnd: 0xffffff });
+        _b4.copy(bs.grp.position).addScaledVector(B.u, rnd(-1, 1) * R * 2.2).addScaledVector(B.w, rnd(-1, 1) * R * 2.2);
+        sprite(tex.star, 0xffe6c4, 2.6, 0.22, { pos: _b4.clone(), from: 0.2, rot: rnd(0, 1.5), noDepth: true });   // 원반이 번쩍
+        sprite(tex.dot, BH_AMB, 3.2, 0.3, { pos: bs.grp.position.clone(), from: 0.6, opacity: 0.6 });
+      }
+    };
+  }
+
   // ---------------------------------------------------------------- 속성별 타격 이펙트
   // p: 타격 지점(몬스터 몸통 중앙), o: { dir(수평 단위벡터), ground(Vector3 발밑), power, radius(몬스터 크기), prism }
   function impact(elKey, p, o) {
@@ -3250,6 +3702,9 @@ void main() {
       case 'nova':
         supernova(P, gr, pw, !!o.lite);
         break;
+      case 'blackhole':
+        bhCollapse(P, { ground: gr, power: pw, lite: !!o.lite });
+        break;
       default: // steel
         emitTo(glow, { pos: P, n: 16, dir: dir, cone: 1.15, speed: [4, 10], up: [1, 3], life: [0.2, 0.5], size: [0.09, 0.17], sizeEnd: 0, color: [0xffffff, 0xffe6a0, 0xffb060], grav: 15, floor: 0.05, drag: 0.5 });
         chunkBurst({ pos: P, n: 5, speed: [2, 4.5], up: [2.5, 5], size: [0.07, 0.12], color: [0xc8d2e0, 0x8a94a6], life: [0.6, 1], dir: dir });
@@ -3345,6 +3800,8 @@ void main() {
     tryDo(function () { binaryInspiral(P.clone(), { dur: 0.4, rise: 0.1, from: P.clone(), ground: P.clone(), R: 3 }); });
     tryDo(function () { whiteDwarfMerger(P.clone(), { ground: P.clone(), R: 3 }); });
     tryDo(function () { meteor(P.clone().add(new THREE.Vector3(0, 3, 0)), P.clone(), { dur: 0.3 }); meteorImpact(P.clone(), { ground: P.clone() }); meteorCall(P.clone()); });
+    tryDo(function () { projectile(P.clone(), P.clone().add(D), { el: 'blackhole', kind: 'blackhole', dur: 5 }); bhCharge(function (v) { return v.copy(P); }, 0.3); bhLaunch(P.clone(), D.clone()); });
+    tryDo(function () { bhOpen(P.clone(), { ground: P.clone(), victim: P.clone().add(D) }); bhCollapse(P.clone(), { ground: P.clone(), big: true }); bhUltHole(P.clone(), { ground: P.clone(), life: 0.5, rise: 0.1, open: 0.2 }); });
     ['orb', 'fireball', 'arrow'].forEach(function (k) {
       tryDo(function () { projectile(P.clone(), P.clone().add(D), { el: k === 'fireball' ? 'fire' : 'star', kind: k, dur: 5 }); });
     });
@@ -3414,6 +3871,7 @@ void main() {
     emit: function (o) { emitTo(glow, o); }, emitSmoke: function (o) { emitTo(smoke, o); }, chunkBurst: chunkBurst,
     sprite: sprite, flash: flash, decal: decal, shockRing: shockRing, pillar: pillar, blast: blast, spikes: spikes, bolt: bolt,
     Trail: Trail, slashArc: slashArc, thrustStreak: thrustStreak, groundSlam: groundSlam, chargeAt: chargeAt, projectile: projectile,
+    bhCharge: bhCharge, bhLaunch: bhLaunch, bhOpen: bhOpen, bhCollapse: bhCollapse, bhUltHole: bhUltHole, diskMat: diskMat, after: after,
     impact: impact, novaCollapse: novaCollapse, novaBreakout: novaBreakout, binaryInspiral: binaryInspiral, whiteDwarfMerger: whiteDwarfMerger, inspiralRatio: inspiralRatio, meteor: meteor, meteorImpact: meteorImpact, meteorCall: meteorCall, debris: debris, deathBurst: deathBurst, lootOrbs: lootOrbs, levelUp: levelUp, victory: victory, dust: dust, hurtBurst: hurtBurst,
     haloSprite: haloSprite, PRISM: PRISM,
     get scene() { return scene; }, get activeCount() { return (glow ? glow.active : 0) + (chunks ? chunks.active : 0) + transient.length; }
@@ -3805,7 +4263,7 @@ var M = (function () {
     var w = weaponById(id), E = EL(w.el), el = w.el;
     var g = new THREE.Group();
     var ticks = [];
-    var base = null, tip = null, off = null, rest = null, novaAPI = null;
+    var base = null, tip = null, off = null, rest = null, novaAPI = null, bhAPI = null;
     var type = w.type;
     var bm = bladeMat(E, el), cm = coreMat(E);
     var metal = mat(0x8e9aae), dark = mat(0x2a3040), wood = mat(0x5c4a33), leather = mat(0x3a2a1e);
@@ -3932,6 +4390,60 @@ var M = (function () {
       base = marker(g, 1.2); tip = marker(g, 2.42);
       glowOn(g, 2.0, 1.6);
       rest = { pos: [0.07, -0.05, 0.12], rot: [2.25, 0, -0.1] };
+    } else if (type === 'staff' && w.blackhole) {           // 가이아 BH3: 잠든 블랙홀(태양 33배)과 그 짝별을 가둔 운철 지팡이
+      var iron = mat(0x24202e, { flat: true }), gilt = mat(0xd8a84a, { emissive: 0x5a3a08, ei: 0.4 }), amber = mat(0xffb05a, { emissive: 0xff8a30, ei: 0.8 });
+      var ironP = [], giltP = [], ambP = [];
+      ironP.push(cyl(g, 0.04, 0.05, 1.56, 7, iron, 0, 0.68, 0));                                   // 운철 자루
+      ironP.push(cone(g, 0.055, 0.22, 5, iron, 0, -0.2, 0, Math.PI, 0, 0));                         // 뾰족한 물미
+      for (var gb2 = 0; gb2 < 3; gb2++) giltP.push(cyl(g, 0.058, 0.058, 0.04, 8, gilt, 0, 0.14 + gb2 * 0.44, 0));
+      for (var hx2 = 0; hx2 < 16; hx2++) { var ha = hx2 * 0.9; ambP.push(box(g, 0.026, 0.026, 0.026, amber, Math.cos(ha) * 0.052, 0.22 + hx2 * 0.075, Math.sin(ha) * 0.052, ha, ha, 0)); } // 나선 홈: 빨려 드는 궤적
+      giltP.push(torus(g, 0.12, 0.022, 12, gilt, 0, 1.47, 0, Math.PI / 2, 0, 0));                   // 받침 테
+      for (var cl2 = 0; cl2 < 4; cl2++) {                                                           // 지평선을 붙든 발톱 4개
+        var ca = cl2 / 4 * Math.PI * 2 + Math.PI / 4;
+        var claw = cone(g, 0.034, 0.46, 4, iron, Math.cos(ca) * 0.13, 1.62, Math.sin(ca) * 0.13);
+        claw.rotation.set(Math.sin(ca) * 0.62, 0, -Math.cos(ca) * 0.62); ironP.push(claw);
+        ambP.push(octa(g, 0.03, amber, Math.cos(ca) * 0.265, 1.83, Math.sin(ca) * 0.265));
+      }
+      mergeParts(g, ironP, iron); mergeParts(g, giltP, gilt); mergeParts(g, ambP, amber);          // 정적 부품 30개 → 3 드로우
+      var bhHead = group(g, 0, 1.86, 0), bhG = group(bhHead, 0, 0, 0);
+      add(bhG, new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 12), basic(0x000000)));        // 사건의 지평선 (그림자)
+      var disk = add(bhG, new THREE.Mesh(FX.geo.disk, FX.diskMat({ spin: 2.2 })), 0, 0, 0, 0.42, 0, 0.18); disk.scale.setScalar(0.38); // 강착 원반
+      var lensS = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX.tex.lens, color: 0xffe2b8, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+      lensS.scale.setScalar(0.36); lensS.renderOrder = 9; bhG.add(lensS);                           // 광자 고리
+      var haloA = FX.haloSprite(0xffa860, 1.4, 0.4); bhHead.add(haloA);
+      var haloV = FX.haloSprite(0x8a5cff, 2.6, 0.25); bhHead.add(haloV);
+      var orbit = group(bhHead, 0, 0, 0); orbit.rotation.set(-0.55, 0.3, 0.4);                     // 짝별 궤도면 (원반과 어긋남)
+      var ecc = 0.6, oa = 0.42, ob2 = oa * Math.sqrt(1 - ecc * ecc), pts = [];
+      for (var ep = 0; ep <= 64; ep++) { var ea = ep / 64 * Math.PI * 2; pts.push(new THREE.Vector3(oa * (Math.cos(ea) - ecc), 0, ob2 * Math.sin(ea))); }
+      var orbitLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xb48cff, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
+      orbit.add(orbitLine);
+      var comp = add(orbit, new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 6), basic(0xfff0c8)));  // 짝별: 늙은 거성
+      comp.add(FX.haloSprite(0xffd890, 0.42, 0.9));
+      var inflow = [];
+      for (var bi3 = 0; bi3 < 5; bi3++) inflow.push(octa(bhHead, 0.022, basic(0xffc080, { add: true, opacity: 0.9 }), 0, 0, 0));
+      base = marker(g, 0.9); tip = marker(g, 1.86);
+      var chg = 0, pres = 1, diskT = 0, lastT2 = -1, dU = disk.material.uniforms;
+      bhAPI = { set: function (c, pz) { chg = c; pres = pz; } };
+      ticks.push(function (t) {
+        var dt = lastT2 < 0 ? 0 : Math.min(0.05, Math.max(0, t - lastT2)); lastT2 = t;
+        diskT += dt * (1 + chg * 5); dU.uTime.value = diskT; dU.uHeat.value = 1 + chg * 0.8;    // 깨어날수록 빨리 돌고 뜨거워짐
+        var pr = pres >= 1 ? 1 : pres <= 0 ? 0 : 1 + 2.7 * Math.pow(pres - 1, 3) + 1.7 * Math.pow(pres - 1, 2); // 새 특이점: 오버슈트하며 맺힘
+        bhG.scale.setScalar(Math.max(0.001, pr * (1 + chg * 0.5) * (1 + Math.sin(t * 2.2) * 0.04)));
+        lensS.material.opacity = 0.8 + Math.sin(t * 5.3) * 0.12;
+        haloA.material.opacity = (0.3 + chg * 0.5) * Math.min(1, pr * 1.4);
+        haloV.material.opacity = 0.2 + chg * 0.35 + Math.sin(t * 1.7) * 0.05;
+        amber.emissiveIntensity = 0.7 + chg * 1.2 + Math.sin(t * 3) * 0.15;
+        var M2 = t * 2.1, E2 = M2;                                                                  // 케플러 방정식: 근점에서 빨라짐 (제2법칙)
+        for (var q = 0; q < 5; q++) E2 -= (E2 - ecc * Math.sin(E2) - M2) / (1 - ecc * Math.cos(E2));
+        comp.position.set(oa * (Math.cos(E2) - ecc), 0, ob2 * Math.sin(E2));
+        comp.visible = orbitLine.visible = pr > 0.3;
+        for (q = 0; q < inflow.length; q++) {                                                      // 빨려 드는 부스러기
+          var ph = (t * (0.8 + chg * 1.6) + q / inflow.length) % 1, rr3 = 0.1 + 0.42 * Math.pow(1 - ph, 1.5), an = q * 2.51 + ph * 9;
+          inflow[q].position.set(Math.cos(an) * rr3, (1 - ph) * 0.16 * (q % 2 ? 1 : -1), Math.sin(an) * rr3);
+          inflow[q].scale.setScalar(0.5 + ph); inflow[q].visible = pr > 0.3;
+        }
+      });
+      rest = { pos: [0.06, -0.02, 0.1], rot: [0.18, 0, -0.06] };
     } else if (type === 'staff') {
       cyl(g, 0.042, 0.05, 1.5, 6, mat(0x4a3a2a), 0, 0.66, 0);
       for (var ti2 = 0; ti2 < 3; ti2++) box(g, 0.072, 0.03, 0.072, leather, 0, 0.1 + ti2 * 0.14, 0);
@@ -4086,7 +4598,7 @@ var M = (function () {
     if (off) off.traverse(function (c) { if (c.isMesh) c.castShadow = true; });
 
     var tick = ticks.length ? function (t) { for (var i = 0; i < ticks.length; i++) ticks[i](t); } : null;
-    return { g: g, off: off, tick: tick, base: base, tip: tip, rest: rest, type: type, el: el, E: E, def: w, prism: w.stars >= 6, nova: novaAPI };
+    return { g: g, off: off, tick: tick, base: base, tip: tip, rest: rest, type: type, el: el, E: E, def: w, prism: w.stars >= 6 && !w.blackhole, nova: novaAPI, bh: bhAPI };
   }
   function buildSword(id) { return buildWeapon(id); } // 구버전 호환
 
@@ -6148,7 +6660,7 @@ var Game = (function () {
 
     var hero = M.buildHero();
     var weapon = hero.equip(save.equipped);
-    if (weapon.el === 'nova' && SFX.warmNova) SFX.warmNova();   // 궁극기 잔향·왜곡 곡선을 입장 때 미리 만들어 둔다 (발동 순간 끊김 방지)
+    if ((weapon.el === 'nova' || weapon.bh) && SFX.warmNova) SFX.warmNova();   // 궁극기 잔향·왜곡 곡선을 입장 때 미리 만들어 둔다 (발동 순간 끊김 방지)
     var trail = new FX.Trail(28, 0.19);
     trail.setColors(weapon.E.c1, weapon.E.c2, weapon.prism);
     sceneDungeon.add(trail.mesh);
@@ -6468,6 +6980,15 @@ var Game = (function () {
       },
       fx: null
     },
+    blackhole: {                              // 가이아 BH3: 두 손으로 치켜들고 떠올라 특이점을 깨움 → 크게 내리휘둘러 사출
+      dur: 1.15, hit: 0.8, ranged: true, charge: [0.06, 0.46], release: 0.5, swing: 0.05, trail: [0.44, 0.62],
+      anim: function (h, k) {
+        if (k < 0.46) { var w = ease(k / 0.46); h.armR.rotation.x = -2.8 * w; h.armL.rotation.x = -2.5 * w; h.armR.rotation.z = -0.1 * w; h.armL.rotation.z = 0.35 * w; h.body.rotation.x = -0.16 * w; h.g.position.y = 0.14 * w + Math.sin(k * 30) * 0.015 * w; }
+        else if (k < 0.6) { var s = easeOutBack((k - 0.46) / 0.14); h.armR.rotation.x = lerp(-2.8, -0.85, s); h.armL.rotation.x = lerp(-2.5, -0.6, s); h.armR.rotation.z = lerp(-0.1, 0, s); h.armL.rotation.z = lerp(0.35, 0.1, s); h.body.rotation.x = lerp(-0.16, 0.24, s); h.g.position.y = lerp(0.14, 0, s); }
+        else { var r = ease((k - 0.6) / 0.4); h.armR.rotation.x = lerp(-0.85, -0.25, r); h.armL.rotation.x = lerp(-0.6, 0, r); h.armL.rotation.z = lerp(0.1, 0, r); h.body.rotation.x = lerp(0.24, 0, r); h.g.position.y = 0; }
+      },
+      fx: null
+    },
     bow: {
       dur: 0.92, hit: 0.7, ranged: true, charge: [0.1, 0.52], release: 0.54, swing: 0.12,
       anim: function (h, k) {
@@ -6486,18 +7007,20 @@ var Game = (function () {
     else if (k < 0.74) nv.set(1, 0);
     else nv.set(0, Math.min(1, (k - 0.74) / 0.24));
   }
+  function atkOf(wp) { return wp.def.blackhole ? ATTACKS.blackhole : (ATTACKS[wp.type] || ATTACKS.sword); }  // 무기별 공격 안무 (가이아 BH3 는 전용)
+  function sndOf(wp) { return wp.def.blackhole ? 'blackhole' : wp.type; }                                    // 휘두름·발사 소리 키
   function easeOutBack(k) { var c = 1.7; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); }
   function easeInOut(k) { return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; }
 
   function startAttack(mi) {
     var mo = run.monsters[mi], p = run.player, w = run.weapon;
-    var def = ATTACKS[w.type] || ATTACKS.sword;
+    var def = atkOf(w);
     var dir = new THREE.Vector3(mo.g.position.x - p.x, 0, mo.g.position.z - p.z);
     var dist = dir.length() || 1;
     dir.normalize();
     var right = new THREE.Vector3(dir.z, 0, -dir.x);
     atk = {
-      def: def, t: 0, mi: mi, el: w.el, type: w.type, prism: w.prism, spin: 0,
+      def: def, t: 0, mi: mi, el: w.el, type: w.type, snd: sndOf(w), prism: w.prism, spin: 0,
       dir: dir, right: right, dist: dist,
       origin: new THREE.Vector3(p.x, 1.15, p.z),
       ground: new THREE.Vector3(mo.g.position.x, 0, mo.g.position.z),
@@ -6512,9 +7035,9 @@ var Game = (function () {
     applyHit(mo);
   }
   function applyHit(mo) {
-    var w = run.weapon, def = ATTACKS[w.type] || ATTACKS.sword;
+    var w = run.weapon, def = atkOf(w);
     mo.plan.hp = Math.max(0, mo.plan.hp - BAL.swordDamage);
-    var meteorW = !!w.def.meteor, dead = mo.plan.hp <= 0, heavy = !!def.heavy || meteorW, big = heavy || dead;
+    var meteorW = !!w.def.meteor, bhW = !!w.def.blackhole, dead = mo.plan.hp <= 0, heavy = !!def.heavy || meteorW || bhW, big = heavy || dead;
     var pw = (mo.plan.tier === 'normal' ? 1 : 1.25) * (dead ? 1.12 : 1);
     var hitPos = new THREE.Vector3(mo.g.position.x, mo.h * 0.55, mo.g.position.z);
     var ground = new THREE.Vector3(mo.g.position.x, 0, mo.g.position.z);
@@ -6522,11 +7045,12 @@ var Game = (function () {
     if (dir.lengthSq() < 1e-6) dir.set(0, 0, -1);
     dir.normalize();
     if (meteorW) FX.meteorImpact(hitPos, { ground: ground, power: pw });
+    else if (bhW) { var hole = mo.bhHole || hitPos; FX.bhCollapse(hole, { ground: new THREE.Vector3(hole.x, 0, hole.z), power: pw }); mo.bhHole = null; }   // 특이점 붕괴 → 제트
     else FX.impact(w.el, hitPos, { dir: dir, ground: ground, power: pw, radius: 0.75 * mo.scale, prism: w.prism });
     FX.debris(hitPos, [run.d.accent, 0xffffff], big ? 7 : 4, dir);
     hitSpark(hitPos, w.E, big);
     FX.flash(hitPos, w.E.glow, big ? 3.4 : 2.3, 0.22);          // (높음 품질) 벽을 속성색으로 물들이는 섬광
-    if (meteorW) SFX.meteorImpact(screenPan(hitPos), true); else SFX.impact(w.el, heavy);
+    if (meteorW) SFX.meteorImpact(screenPan(hitPos), true); else if (bhW) SFX.bhCollapse(screenPan(hitPos), dead); else SFX.impact(w.el, heavy);
     SFX.thump(big);
     mo.flash = 1;
     hitStop = dead ? 0.1 : heavy ? 0.085 : 0.06;
@@ -6539,6 +7063,27 @@ var Game = (function () {
     UI.hitPanel(big);
     if (dead) killMonster(mo);
     else if (battle) { battle.qIndex++; setTimeout(nextQuestion, 820); }
+  }
+  // 가이아 BH3: 날아간 특이점이 적 앞에서 열려 몸을 국수처럼 늘여 빨아들이다가(BH_PULL 초) 붕괴하며 타격
+  var BH_PULL = 0.46;
+  function bhArrive(mo) {
+    if (!run || !mo || !mo.plan.alive) return;
+    var dir = TMP3.set(mo.g.position.x - run.player.x, 0, mo.g.position.z - run.player.z);
+    if (dir.lengthSq() < 1e-6) dir.set(0, 0, -1);
+    dir.normalize();
+    var R = 0.28 * (mo.plan.tier === 'normal' ? 1 : 1.25);   // 적 머리 위(살짝 뒤)에 열린다 → 몸이 위로 늘어나 빨려 들고, 전투 패널에도 가리지 않음
+    var hole = mo.bhHole = new THREE.Vector3(mo.g.position.x + dir.x * 0.25, mo.h + 0.95 + 0.3 * mo.scale, mo.g.position.z + dir.z * 0.25);
+    FX.bhOpen(hole, { R: R, dur: BH_PULL, ground: new THREE.Vector3(hole.x, 0, hole.z), victim: new THREE.Vector3(mo.g.position.x, mo.h * 0.5, mo.g.position.z), vr: 0.35 * mo.scale, colors: [run.d.accent, 0xffffff] });
+    spaghettify(mo, hole, BH_PULL, 1);
+    SFX.bhPull(screenPan(hole), BH_PULL);
+    addShake(0.25); buzz(12);
+    FX.after(BH_PULL, function () { if (run && mo.plan.alive) doHit(mo); });
+  }
+  function spaghettify(mo, hole, dur, power) {           // 조석력: 반동 그룹만 블랙홀 쪽으로 늘이고 기울임 (몬스터 로컬 좌표로 변환)
+    var a = mo.g.rotation.y, wx = hole.x - mo.g.position.x, wz = hole.z - mo.g.position.z;
+    for (var i = monsterFx.length - 1; i >= 0; i--) if (monsterFx[i].mo === mo && (monsterFx[i].kind === 'hurt' || monsterFx[i].kind === 'spag')) monsterFx.splice(i, 1);
+    monsterFx.push({ mo: mo, t: 0, kind: 'spag', dur: dur, power: power, ly: hole.y - mo.h * 0.5,
+      lx: wx * Math.cos(a) - wz * Math.sin(a), lz: wx * Math.sin(a) + wz * Math.cos(a) });
   }
   function killMonster(mo) {
     mo.plan.alive = false;
@@ -6691,8 +7236,22 @@ var Game = (function () {
     if (lobbyShowoff > 0) {
       lobbyShowoff += dt * 1.55;
       var k = Math.min(1, lobbyShowoff);
-      var def = ATTACKS[lobbyWeapon.type] || ATTACKS.sword;
+      var def = atkOf(lobbyWeapon);
       def.anim(h, k, { spin: 0 });
+      if (lobbyWeapon.bh) {                                  // 가이아 BH3: 특이점을 깨워 옆에 쏘면 열렸다가 붕괴하며 제트를 뿜는다
+        novaPhase(lobbyWeapon.bh, def, k);
+        if (!lobbyNova.charged && k >= def.charge[0]) { lobbyNova.charged = true; var lb = lobbyWeapon, cd = (def.release - def.charge[0]) / 1.55; FX.bhCharge(function (v) { return lb.tip.getWorldPosition(v); }, cd, { size: 0.8 }); SFX.bhCharge(cd); }
+        if (!lobbyNova.fired && k >= def.release) {
+          lobbyNova.fired = true;
+          var bf = lobbyWeapon.tip.getWorldPosition(new THREE.Vector3()), bt = lobbyTarget(h).setY(1.1);
+          SFX.release('blackhole'); FX.bhLaunch(bf, TMP3.copy(bt).sub(bf).normalize());
+          FX.projectile(bf, bt, { el: 'blackhole', kind: 'blackhole', dur: 0.3, arc: 0.35, onArrive: function (p) {
+            var gp = new THREE.Vector3(p.x, 0, p.z);
+            FX.bhOpen(p, { R: 0.26, dur: 0.4, ground: gp }); SFX.bhPull(0, 0.4);
+            FX.after(0.4, function () { FX.bhCollapse(p, { ground: gp, power: 0.75, lite: true }); SFX.bhCollapse(0, false); });
+          } });
+        }
+      }
       if (lobbyWeapon.nova) {
         novaPhase(lobbyWeapon.nova, def, k);
         if (!lobbyNova.charged && k >= def.charge[0]) { lobbyNova.charged = true; var lw = lobbyWeapon; FX.novaCollapse(function (v) { return lw.tip.getWorldPosition(v); }, (def.release - def.charge[0]) / 1.55, { size: 1.1 }); }
@@ -6700,9 +7259,7 @@ var Game = (function () {
       }
       if (lobbyWeapon.def.meteor && !lobbyNova.meteor && k >= def.release) {
         lobbyNova.meteor = true;
-        var cr = TMP3.set(1, 0, 0).applyQuaternion(camera.quaternion); cr.y = 0; cr.normalize();         // 카메라 기준 오른쪽
-        var cf = TMP2.set(0, 0, -1).applyQuaternion(camera.quaternion); cf.y = 0; cf.normalize();       // 카메라 기준 앞(화면 안쪽)
-        var tg = new THREE.Vector3(h.g.position.x + cr.x * 1.9 + cf.x * 1.2, 0.35, h.g.position.z + cr.z * 1.9 + cf.z * 1.2); // 상점 패널에 가리지 않는 영웅 오른쪽 뒤편
+        var tg = lobbyTarget(h);
         FX.meteorCall(lobbyWeapon.tip.getWorldPosition(new THREE.Vector3())); SFX.meteorSummon(); SFX.meteorFall(0.5, 0);
         FX.meteor(meteorSky(tg, 0.25), tg, { dur: 0.5, size: 0.85,
           onArrive: function (p) { FX.meteorImpact(p, { ground: new THREE.Vector3(p.x, 0, p.z), power: 0.8, lite: true }); SFX.meteorImpact(0, false); } });
@@ -6712,8 +7269,8 @@ var Game = (function () {
       if (k > tr[0] && k < tr[1]) {
         lobbyTrail.push(lobbyWeapon.base.getWorldPosition(TMP), lobbyWeapon.tip.getWorldPosition(TMP2));
       }
-      if (!lobbyShowoffSwung && k > (def.swing || 0.2)) { lobbyShowoffSwung = true; SFX.swing(lobbyWeapon.type); }
-      if (k >= 1) { lobbyShowoff = 0; lobbyShowoffSwung = false; lobbyNova.charged = lobbyNova.fired = lobbyNova.meteor = false; if (lobbyWeapon.nova) lobbyWeapon.nova.set(0, 1); h.armR.rotation.set(-0.25, 0, 0); h.armL.rotation.set(0, 0, 0); h.body.rotation.set(0, 0, 0); }
+      if (!lobbyShowoffSwung && k > (def.swing || 0.2)) { lobbyShowoffSwung = true; SFX.swing(sndOf(lobbyWeapon)); }
+      if (k >= 1) { lobbyShowoff = 0; lobbyShowoffSwung = false; lobbyNova.charged = lobbyNova.fired = lobbyNova.meteor = false; if (lobbyWeapon.nova) lobbyWeapon.nova.set(0, 1); if (lobbyWeapon.bh) lobbyWeapon.bh.set(0, 1); h.armR.rotation.set(-0.25, 0, 0); h.armL.rotation.set(0, 0, 0); h.body.rotation.set(0, 0, 0); }
     } else {
       h.armL.rotation.x = Math.sin(t * 1.6) * 0.07;
       h.armR.rotation.x = -0.25 + Math.sin(t * 1.6 + 1) * 0.06;
@@ -6742,6 +7299,11 @@ var Game = (function () {
     renderer.render(sceneLobby, camera);
   }
   var lobbyShowoffSwung = false, lobbyNova = { charged: false, fired: false };
+  function lobbyTarget(h) {                                  // 상점 패널에 가리지 않는 영웅 오른쪽 뒤편 (카메라 기준)
+    var cr = TMP3.set(1, 0, 0).applyQuaternion(camera.quaternion); cr.y = 0; cr.normalize();
+    var cf = TMP2.set(0, 0, -1).applyQuaternion(camera.quaternion); cf.y = 0; cf.normalize();
+    return new THREE.Vector3(h.g.position.x + cr.x * 1.9 + cf.x * 1.2, 0.35, h.g.position.z + cr.z * 1.9 + cf.z * 1.2);
+  }
 
   function tickDungeon(dt, t) {
     var p = run.player, h = run.hero;
@@ -6815,8 +7377,9 @@ var Game = (function () {
           var k = mo.deadT / 0.55;
           var s = Math.max(0.001, 1 - k);
           mo.g.scale.setScalar(s);
-          mo.g.rotation.y += dt * 11;
-          mo.g.position.y = k * 0.6;
+          mo.g.rotation.y += dt * (mo.sink ? 18 : 11);
+          if (mo.sink) mo.g.position.lerp(mo.sink, 1 - Math.exp(-dt * 8));   // 블랙홀에 삼켜짐: 지평선으로 끌려가며 사라짐
+          else mo.g.position.y = k * 0.6;
           if (mo.label) mo.label.material.opacity = Math.max(0, 1 - k * 2);
           if (mo.deadT > 0.55) { sceneDungeon.remove(mo.g); disposeTree(mo.g); mo.deadT = -1; }
         }
@@ -6859,6 +7422,14 @@ var Game = (function () {
         R.scale.set(1 + 0.2 * P * sq, 1 - 0.26 * P * sq, 1 + 0.2 * P * sq);
         R.rotation.set(fx.dir.z * 0.34 * P * push, 0, -fx.dir.x * 0.34 * P * push);
         if (u >= 1) { R.position.set(0, 0, 0); R.scale.set(1, 1, 1); R.rotation.set(0, 0, 0); monsterFx.splice(f2, 1); }
+      } else if (fx.kind === 'spag') {                   // 조석력: 블랙홀 쪽으로 떠오르며 국수처럼 늘어나고 떨림
+        fx.t += dt;
+        var sk = Math.min(1, fx.t / fx.dur), se = sk * sk * (3 - 2 * sk) * fx.power, jt = (Math.random() - 0.5) * 0.07 * se;
+        var dl = Math.hypot(fx.lx, fx.lz) || 1, lean = Math.min(0.7, Math.atan2(dl, Math.max(0.1, fx.ly))) * Math.min(se, 1.2);   // 블랙홀 방향으로 기울기
+        R.position.set(fx.lx * 0.28 * se + jt, Math.max(0, fx.ly) * 0.22 * se, fx.lz * 0.28 * se + jt);
+        R.scale.set(1 - 0.42 * Math.min(se, 1.2), 1 + 0.75 * Math.min(se, 1.6), 1 - 0.42 * Math.min(se, 1.2));
+        R.rotation.set(fx.lz / dl * lean, Math.sin(fx.t * 30) * 0.08 * se, -fx.lx / dl * lean);
+        if (fx.t > fx.dur + 0.6) { R.position.set(0, 0, 0); R.scale.set(1, 1, 1); R.rotation.set(0, 0, 0); monsterFx.splice(f2, 1); }
       } else {
         fx.t += dt * 3;
         var k2 = fx.t, a2 = k2 < 0.5 ? k2 * 2 : (1 - k2) * 2;
@@ -6912,6 +7483,7 @@ var Game = (function () {
     var k = clamp01(a.t / def.dur);
     def.anim(h, k, a);
     if (run.weapon.nova) novaPhase(run.weapon.nova, def, k);
+    if (run.weapon.bh) novaPhase(run.weapon.bh, def, k);         // 특이점도 같은 박자: 깨어남 → 사출(비어 있음) → 새로 맺힘
 
     // 전진(런지)
     var push = 0;
@@ -6929,40 +7501,44 @@ var Game = (function () {
       run.trail.push(run.weapon.base.getWorldPosition(TMP), run.weapon.tip.getWorldPosition(TMP2));
     }
     // 스윙 소리
-    if (!a.swung && k >= (def.swing || 0.2)) { a.swung = true; SFX.swing(a.type); }
+    if (!a.swung && k >= (def.swing || 0.2)) { a.swung = true; SFX.swing(a.snd); }
     // 다연타
     if (def.multiSwing) {
       while (a.swingIdx < def.multiSwing.length && k >= def.multiSwing[a.swingIdx]) {
         if (def.fx) def.fx(a, a.swingIdx);
-        SFX.swing(a.type);
+        SFX.swing(a.snd);
         a.swingIdx++;
       }
     }
     // 기 모으기 (원거리)
     if (def.charge && !a.charged && k >= def.charge[0]) {
       a.charged = true;
-      SFX.charge();
-      var wp = run.weapon;
-      if (a.el === 'nova') FX.novaCollapse(function (v) { return wp.tip.getWorldPosition(v); }, (def.release - def.charge[0]) * def.dur, { size: 1.4 });
-      else FX.chargeAt(function (v) { return wp.tip.getWorldPosition(v); }, a.el, (def.charge[1] - def.charge[0]) * def.dur, { prism: a.prism, size: a.type === 'staff' ? 1.6 : 1.1 });
+      var wp = run.weapon, cdur = (def.release - def.charge[0]) * def.dur;
+      if (wp.bh) { SFX.bhCharge(cdur); FX.bhCharge(function (v) { return wp.tip.getWorldPosition(v); }, cdur, { size: 1.1 }); }
+      else {
+        SFX.charge();
+        if (a.el === 'nova') FX.novaCollapse(function (v) { return wp.tip.getWorldPosition(v); }, cdur, { size: 1.4 });
+        else FX.chargeAt(function (v) { return wp.tip.getWorldPosition(v); }, a.el, (def.charge[1] - def.charge[0]) * def.dur, { prism: a.prism, size: a.type === 'staff' ? 1.6 : 1.1 });
+      }
     }
     // 발사
     if (def.ranged && !a.fired && k >= def.release) {
       a.fired = true;
-      if (!run.weapon.def.meteor) SFX.release(a.type);
+      if (!run.weapon.def.meteor) SFX.release(a.snd);
       var from = run.weapon.tip.getWorldPosition(new THREE.Vector3());
       var to = new THREE.Vector3(mo.g.position.x, mo.h * 0.55, mo.g.position.z);
-      var nova = a.el === 'nova';
-      var travel = Math.max(0.12, from.distanceTo(to) / (a.type === 'bow' ? 26 : nova ? 18 : 14));
+      var nova = a.el === 'nova', bh = !!run.weapon.bh;
+      var travel = Math.max(bh ? 0.24 : 0.12, from.distanceTo(to) / (a.type === 'bow' ? 26 : nova ? 18 : bh ? 10 : 14));
       if (nova) { FX.novaBreakout(from, TMP3.copy(to).sub(from).normalize()); addShake(0.3); }
+      if (bh) { FX.bhLaunch(from, TMP3.copy(to).sub(from).normalize()); addShake(0.35); kickCamera(TMP3.setY(0).normalize(), 0.4, false); }
       if (run.weapon.def.meteor) {                             // 용의 숨결: 지팡이가 하늘을 부르면 운석이 떨어진다
         var sky = meteorSky(to, (Math.random() - 0.5) * 0.5), mpan = screenPan(to);
         FX.meteorCall(from); SFX.meteorSummon(); SFX.meteorFall(0.5, mpan);
         FX.meteor(sky, to, { dur: 0.5, onBreak: function () { SFX.meteorBreak(mpan); }, onArrive: function () { if (run && mo && mo.plan.alive) doHit(mo); } });
       } else FX.projectile(from, to, {
-        el: a.el, kind: a.type === 'bow' ? 'arrow' : nova ? 'nova' : (a.el === 'fire' ? 'fireball' : 'orb'),
-        dur: travel, arc: a.type === 'bow' ? 0.15 : 0.3, prism: a.prism,
-        onArrive: function () { if (run && mo && mo.plan.alive) doHit(mo); }
+        el: a.el, kind: a.type === 'bow' ? 'arrow' : nova ? 'nova' : bh ? 'blackhole' : (a.el === 'fire' ? 'fireball' : 'orb'),
+        dur: travel, arc: a.type === 'bow' ? 0.15 : bh ? 0.35 : 0.3, prism: a.prism,
+        onArrive: function () { if (run && mo && mo.plan.alive) { if (bh) bhArrive(mo); else doHit(mo); } }
       });
       if (a.type === 'bow' && run.weapon.g.userData.arrow) run.weapon.g.userData.arrow.visible = false;
     }
@@ -6999,6 +7575,12 @@ var Game = (function () {
       var dist = 5.7 + 5.2 * pullN;
       camTarget = TMP.set(p.x + Math.sin(yaw) * dist, 8.3 + 4.4 * pullN, p.z + Math.cos(yaw) * dist);
       lookTarget = TMP2.set(p.x, 0.9 + 3.6 * sky, p.z);
+    } else if (ult && ult.bh) {                  // 사건의 지평선: 하늘의 블랙홀을 올려다보며 선회 → 붕괴 뒤 전장을 내려다봄
+      var tb = ult.t, pb = Math.min(1, tb / 0.6) * Math.min(1, Math.max(0, (ult.endAt - tb) / 0.7));
+      var skyb = tb < ult.collapseAt + 0.2 ? Math.min(1, tb / 0.55) : Math.max(0, 1 - (tb - ult.collapseAt - 0.2) / 0.6);
+      var yawb = (-0.45 + 0.9 * easeInOut(Math.min(1, tb / (ult.collapseAt + 0.3)))) * pb, db = 5.7 + 5.6 * pb;
+      camTarget = TMP.set(p.x + Math.sin(yawb) * db, 8.3 + 3.2 * pb, p.z + Math.cos(yawb) * db);
+      lookTarget = TMP2.set(p.x, 0.9 + 3.4 * skyb, p.z);
     } else if (ult) {                            // 궁극기: 뒤로 크게 빠지며 전장을 내려다봄
       var pull = Math.min(1, ult.t / 0.45) * Math.min(1, Math.max(0, (ult.endAt - ult.t) / 0.55));
       camTarget = TMP.set(p.x, 8.3 + 4.6 * pull, p.z + 5.7 + 3.4 * pull);
@@ -7058,7 +7640,7 @@ var Game = (function () {
     try { navigator.vibrate(pattern); } catch (e) { }
   }
   function reactMonster(mo, dir, power) {
-    for (var i = monsterFx.length - 1; i >= 0; i--) if (monsterFx[i].mo === mo && monsterFx[i].kind === 'hurt') monsterFx.splice(i, 1);
+    for (var i = monsterFx.length - 1; i >= 0; i--) if (monsterFx[i].mo === mo && (monsterFx[i].kind === 'hurt' || monsterFx[i].kind === 'spag')) monsterFx.splice(i, 1);
     monsterFx.push({ mo: mo, t: 0, kind: 'hurt', dir: dir.clone(), power: power });
   }
 
@@ -7119,6 +7701,7 @@ var Game = (function () {
     run.ult = 0;
     SFX.musicDuck(true);                                      // 연출 동안 배경음악을 낮춘다
     if (w.el === 'nova') { startNovaUlt(targets, immune); return; }
+    if (w.bh) { startBHUlt(targets, immune); return; }
     var hitAt = targets.map(function (m, i) { return 0.8 + i * 0.1; });
     ult = { t: 0, targets: targets, immune: immune, hitAt: hitAt, struck: 0, slammed: false, el: w.el, E: E,
       name: w.def.ultName || ULT_NAMES[w.el] || '궁극기', lv0: levelFromExp(save.exp).level, endAt: 0.8 + targets.length * 0.1 + 0.8,
@@ -7259,6 +7842,96 @@ var Game = (function () {
     if (ult && i === ult.targets.length - 1) slowMo = 0.3;
     ultKill(mo);
   }
+  // ---------- 가이아 BH3 전용 궁극기: 사건의 지평선 ----------
+  // 타임라인(게임 시간): 0~0.45 특이점이 지팡이를 떠나 하늘로 → ~0.95 지평선이 열림 → 1.0~ 대상마다(0.09초 간격) 조석력에 늘어나며 0.7초 동안 끌려가 삼켜짐
+  //                   → 마지막을 삼킨 0.3초 뒤 붕괴: 처프 → 상대론적 제트 + 중력파 → 지팡이에 새 특이점이 맺힘
+  var BH_ULT = { rise: 0.45, open: 0.95, pull0: 1.0, gap: 0.09, pull: 0.7, y: 5.2, R: 1.2 };
+  function startBHUlt(targets, immune) {
+    var p = run.player, w = run.weapon, B = BH_ULT;
+    var center = new THREE.Vector3(p.x, B.y, p.z), g0 = new THREE.Vector3(p.x, 0, p.z);
+    var eatAt = targets.map(function (m, i) { return B.pull0 + i * B.gap + B.pull; });
+    var collapseAt = Math.max(2.3, (eatAt.length ? eatAt[eatAt.length - 1] : 0) + 0.3);
+    ult = { t: 0, bh: true, targets: targets, immune: immune, struck: 0, pulled: 0, collapsed: false, el: w.el, E: w.E, pending: [],
+      eatAt: eatAt, center: center, collapseAt: collapseAt, name: w.def.ultName || ULT_NAMES[w.el], lv0: levelFromExp(save.exp).level, endAt: collapseAt + 1.25 };
+    setState('dungeon');
+    UI.ultCast(true, ult.name, true);
+    buzz([15, 40, 15]);
+    ult.snd = SFX.bhUlt();
+    if (ult.snd) ult.snd.start();
+    FX.decal(FX.tex.rune, 0xb48cff, g0, BAL.ult.radius * 1.05, ult.endAt, { grow: true, growSpeed: 1.4, spin: -0.6, hold: 0.85, rot: 0, opacity: 0.8 });
+    var tip = w.tip.getWorldPosition(new THREE.Vector3());
+    ult.hole = FX.bhUltHole(center, { from: tip, rise: B.rise, open: B.open, life: collapseAt, R: B.R, ground: g0, radius: BAL.ult.radius });
+    FX.bhLaunch(tip, TMP3.set(0, 1, 0));
+    if (w.bh) w.bh.set(0, 0);                                // 지팡이의 특이점은 하늘로 떠나 비어 있다
+    immune.forEach(function (mo) { spaghettify(mo, center, collapseAt - 0.2, 0.3); });   // 보스·히든은 끌려가다 버팀
+  }
+  function updateBHUlt() {
+    var u = ult, h = run.hero, t = u.t, B = BH_ULT;
+    // 주인공: 지팡이를 치켜들고 떠올라 특이점을 붙듦 → 붕괴 순간 내리꽂음 → 마무리
+    var lift = Math.min(1, t / 0.35), rel = t > u.collapseAt ? Math.min(1, (t - u.collapseAt) / 0.2) : 0;
+    var back = t > u.endAt - 0.5 ? Math.min(1, (t - (u.endAt - 0.5)) / 0.4) : 0;
+    h.g.position.y = (0.55 * lift + Math.sin(t * 2.6) * 0.07) * (1 - rel);
+    h.armR.rotation.x = lerp(lerp(lerp(-0.25, -2.9, lift), -1.0, rel), -0.25, back);
+    h.armL.rotation.x = lerp(lerp(lerp(0, -2.5, lift), -0.7, rel), 0, back);
+    h.armR.rotation.z = -0.12 * lift * (1 - rel); h.armL.rotation.z = 0.32 * lift * (1 - rel);
+    h.body.rotation.x = -0.12 * lift * (1 - rel) * (1 - back);
+    for (var ci = 0; ci < h.cape.length; ci++) h.cape[ci].rotation.x = 0.95 + Math.sin(t * 13 - ci) * 0.28 * (1 - rel);   // 망토가 위로 빨려 듦
+    if (!u.collapsed) {
+      var grow = clamp01((t - B.rise) / (B.open - B.rise)), pr = clamp01((t - B.open) / (u.collapseAt - B.open));
+      if (u.snd) u.snd.update(grow, t, pr);
+      addShake(0.06 + 0.1 * grow * (0.5 + pr));                // 점점 거세지는 떨림
+    }
+    while (u.pulled < u.targets.length && t >= B.pull0 + u.pulled * B.gap) { bhPullTarget(u.targets[u.pulled], u.pulled); u.pulled++; }
+    while (u.struck < u.targets.length && t >= u.eatAt[u.struck]) { bhEat(u.targets[u.struck], u.struck); u.struck++; }
+    if (!u.chirped && t >= u.collapseAt - 0.3) { u.chirped = true; if (u.snd) u.snd.chirp(0.3); }
+    if (!u.slowed && t > u.collapseAt - 0.12) { u.slowed = true; slowMo = 0.45; }   // 붕괴 직전 시간이 느려진다
+    if (!u.collapsed && t >= u.collapseAt) { u.collapsed = true; bhUltCollapse(); }
+    if (t > u.endAt - 0.6) {                                   // 지팡이에 새 특이점이 맺힘
+      if (!u.reborn) { u.reborn = true; if (u.snd) u.snd.reborn(); }
+      if (run.weapon.bh) run.weapon.bh.set(0, Math.min(1, (t - (u.endAt - 0.6)) / 0.45));
+    }
+    if (t >= u.endAt) finishUlt();
+  }
+  function bhPullTarget(mo, i) {                              // 조석력에 붙잡힘: 떠오르며 늘어나고, 몸에서 원반으로 흐름이 이어짐
+    if (!mo.plan.alive) return;
+    var u = ult, body = new THREE.Vector3(mo.g.position.x, mo.h * 0.5, mo.g.position.z);
+    u.pending.push(mo);
+    spaghettify(mo, u.center, BH_ULT.pull, 1.6);
+    if (u.hole) u.hole.pull(body, BH_ULT.pull, [run.d.accent, 0xffffff, 0xffe2b0]);
+    FX.shockRing(new THREE.Vector3(body.x, 0, body.z), 0xb48cff, 0.2, 1.4, 0.4, { thin: true });
+    if (u.snd && i < 8) u.snd.pull(screenPan(body));
+  }
+  function bhEat(mo, i) {                                     // 삼킴: 늘어난 몸이 지평선으로 끌려가 사라짐
+    if (!run || !mo.plan.alive) return;
+    var u = ult, k = u.pending.indexOf(mo);
+    if (k >= 0) u.pending.splice(k, 1);
+    var wp = mo.react.getWorldPosition(new THREE.Vector3());
+    for (var j = monsterFx.length - 1; j >= 0; j--) if (monsterFx[j].mo === mo) monsterFx.splice(j, 1);
+    mo.g.position.copy(wp); mo.react.position.set(0, 0, 0);
+    mo.sink = u.center.clone(); if (mo.shadow) mo.shadow.visible = false;
+    if (u.hole) u.hole.eat(wp, [run.d.accent, 0xffffff, 0xffa860]);
+    if (u.snd) u.snd.eat(screenPan(wp), i); else SFX.impact('blackhole', false);
+    mo.flash = 1; addShake(0.35); buzz(12);
+    if (i === u.targets.length - 1) slowMo = 0.25;
+    ultKill(mo);
+  }
+  function bhUltCollapse() {                                  // 특이점 붕괴: 상대론적 제트가 하늘과 땅을 꿰뚫고 중력파가 전장을 훑는다
+    var u = ult, c = u.center;
+    FX.bhCollapse(c, { ground: new THREE.Vector3(c.x, 0, c.z), power: 2.4, big: true, axis: TMP3.set(0.08, 1, -0.05).normalize() });
+    UI.screenFlash('#ffffff', 0.85);
+    UI.banner('상대론적 제트', 'ult');
+    if (u.snd) u.snd.collapse();
+    buzz([40, 30, 90]);
+    hitStop = 0.18; addShake(1.5);
+    kickCamera(TMP2.set(0, 0.3, 1).normalize(), 1.4, true);
+    ultImmune(u);
+    u.immune.forEach(function (mo) {                           // 버티던 보스·히든은 튕겨 돌아옴
+      if (!mo.plan.alive) return;
+      var d = new THREE.Vector3(mo.g.position.x - c.x, 0, mo.g.position.z - c.z);
+      if (d.lengthSq() < 1e-4) d.set(0, 0, 1);
+      reactMonster(mo, d.normalize(), 1.2);
+    });
+  }
   function ultImmune(u) {                                     // 범위 안 보스·히든은 튕겨냄: "면역"
     u.immune.forEach(function (mo) {
       if (!mo.plan.alive) return;
@@ -7272,6 +7945,7 @@ var Game = (function () {
     var u = ult, h = run.hero;
     u.t += dt;
     if (u.nova) { updateNovaUlt(); return; }
+    if (u.bh) { updateBHUlt(); return; }
     var t = u.t;
     if (t < 0.62) {                               // 회전하며 도약, 무기를 치켜듦
       var k = t / 0.62, e = 1 - (1 - k) * (1 - k);
@@ -7343,6 +8017,7 @@ var Game = (function () {
     if (u.snd) u.snd.stop();
     if (u.pending) u.pending.forEach(function (mo) { if (mo.plan.alive) ultKill(mo); });
     if (run.weapon.nova) run.weapon.nova.set(0, 1);
+    if (run.weapon.bh) run.weapon.bh.set(0, 1);
     var h = run.hero;
     h.g.position.y = 0; h.armR.rotation.set(-0.25, 0, 0); h.armL.rotation.set(0, 0, 0);
     UI.ultCast(false);
