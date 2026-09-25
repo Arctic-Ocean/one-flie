@@ -1059,7 +1059,7 @@ BAL.ult = { max: 100, gain: 20, comboGain: 25, comboAt: 3, radius: 7.5 };
 var ULT_NAMES = {
   steel: '강철 폭풍', gold: '황금 심판', ice: '절대 영도', fire: '홍련 폭발', arcane: '비전 붕괴', poison: '맹독 역병',
   wind: '천공 질풍', thunder: '뇌신 강림', nature: '숲의 분노', moon: '월광 난무', earth: '대지 붕괴', shadow: '암흑 강림',
-  holy: '신성 심판', star: '유성 낙하', nova: 'Ia형 초신성', blackhole: '사건의 지평선'
+  holy: '신성 심판', star: '유성 낙하', nova: 'Ia형 초신성', blackhole: '사건의 지평선', comet: '혜성 충돌'
 };
 
 // 콤보(연속 정답)에 따른 처치 보너스 골드
@@ -1120,7 +1120,8 @@ var ELEMENTS = {
   holy:    { name: '신성', c1: 0xffffff, c2: 0xffe9a0, glow: 0xfff2c8 },
   star:    { name: '별빛', c1: 0xffffff, c2: 0x7aa8ff, glow: 0xa8c4ff },
   nova:    { name: '초신성', c1: 0xffffff, c2: 0x6fb6ff, glow: 0xffa8dc },
-  blackhole: { name: '블랙홀', c1: 0xffe2b0, c2: 0x8a5cff, glow: 0xffa860 }
+  blackhole: { name: '블랙홀', c1: 0xffe2b0, c2: 0x8a5cff, glow: 0xffa860 },
+  comet:   { name: '혜성', c1: 0xf0fbff, c2: 0x4aa8ff, glow: 0x6ec8ff }
 };
 // id 0~5 는 기존 저장 데이터와 호환되도록 그대로 유지. 새 무기는 6번부터.
 var WEAPONS = [
@@ -1143,7 +1144,8 @@ var WEAPONS = [
   { id: 16, name: '별빛 활',         type: 'bow',        el: 'star',    stars: 6, price: 4500, desc: '시위를 당기면 별이 모인다. 유성처럼 날아가는 화살.' },
   { id: 17, name: '용의 숨결',       type: 'staff',      el: 'fire',    stars: 6, price: 5000, desc: '용의 심장이 박힌 지팡이. 하늘을 불러 불타는 운석을 떨어뜨린다.', meteor: true, move: '운석 낙하', ultName: '메테오' },
   { id: 18, name: '초신성',         type: 'scepter',    el: 'nova',    stars: 7, price: 7000, desc: '죽어가는 별의 심장을 가둔 홀. 별핵이 붕괴했다가 적 앞에서 초신성으로 폭발한다.' },
-  { id: 19, name: '가이아 BH3',     type: 'staff',      el: 'blackhole', stars: 8, price: 9000, desc: '태양 33배, 우리 은하에서 가장 무거운 잠든 블랙홀을 깨운 지팡이. 적을 국수처럼 늘여 삼키고 제트를 뿜는다.', blackhole: true, move: '특이점 사출 → 조석 붕괴', ultName: '사건의 지평선' }
+  { id: 19, name: '가이아 BH3',     type: 'staff',      el: 'blackhole', stars: 8, price: 9000, desc: '태양 33배, 우리 은하에서 가장 무거운 잠든 블랙홀을 깨운 지팡이. 적을 국수처럼 늘여 삼키고 제트를 뿜는다.', blackhole: true, move: '특이점 사출 → 조석 붕괴', ultName: '사건의 지평선' },
+  { id: 20, name: '혜성',           type: 'staff',      el: 'comet',   stars: 7, price: 8000, desc: '얼음 핵에 푸른 이온 꼬리를 단 혜성을 불러내는 지팡이. 청록 코마를 두른 채 떨어져 얼음과 증기를 흩뿌린다.', meteor: true, comet: true, move: '혜성 낙하', ultName: '혜성 충돌' }
 ];
 function weaponById(id) { return WEAPONS[id] || WEAPONS[0]; }
 // 상점 진열 순서: 가격 오름차순
@@ -1619,13 +1621,13 @@ var SFX = (function () {
     if (revIn) return revIn;
     var decay = 3.2, pre = 0.01, sr = c.sampleRate, len = Math.floor(sr * (decay + pre));
     var tc = Math.log(decay + 1) / Math.log(200);                     // Tone.js exponentialApproachValueAtTime 의 시간 상수
-    var ir = c.createBuffer(2, len, sr);
-    for (var ch = 0; ch < 2; ch++) {
-      var d = ir.getChannelData(ch);
-      for (var i = 0; i < len; i++) {
-        var t = i / sr - pre, env = t < 0 ? 0 : Math.exp(-t / tc);
-        if (t > decay * 0.9) env *= Math.max(0, (decay - t) / (decay * 0.1));   // 마지막 10% 는 선형으로 0
-        d[i] = (Math.random() * 2 - 1) * env;
+    var ir = c.createBuffer(2, len, sr), nd = noiseBuf.getChannelData(0), nl = nd.length;
+    var kd = Math.exp(-1 / (tc * sr)), i0 = Math.floor(pre * sr), fadeAt = Math.floor((pre + decay * 0.9) * sr);
+    for (var ch = 0; ch < 2; ch++) {                                    // 최적화: 샘플마다 Math.exp·Math.random(약 28만 번) 대신 곱셈 점화식 + 공용 노이즈 버퍼
+      var d = ir.getChannelData(ch), env = 1, off = ch * 7919;
+      for (var i = i0; i < len; i++) {
+        d[i] = nd[(i + off) % nl] * (i < fadeAt ? env : env * (len - i) / (len - fadeAt));   // 마지막 10% 는 선형으로 0
+        env *= kd;
       }
     }
     var conv = c.createConvolver(); conv.buffer = ir;
@@ -1834,6 +1836,25 @@ var SFX = (function () {
     hiss('bandpass', 600, 2400, 0.9, 0.5, 0.12, 0.04, panX, 0.3, 0.05);                          // 번지는 불길
   }
 
+  // ================================================================ 혜성 사운드: 얼음 결정 종소리 · 깨지는 얼음 · 뿜어지는 증기
+  function cometCall() {                                                // 하늘로 솟는 바람 + 높고 맑은 FM 종소리(얼음 결정)
+    if (!sfxOn()) return;
+    var c = ensure(); if (!c) return;
+    hiss('bandpass', 600, 6000, 1.2, 0.45, 0.13, 0, 0, 0.35, 0.05);
+    sweep('sine', 300, 1200, 0.4, 0.05, 0, 0, 0.4, 0.1);
+    [2637, 3136, 3951, 4699].forEach(function (f, i) { fm(f, 3.5, 3, 0.5, 0.025, 0.05 + i * 0.06, i % 2 ? 0.5 : -0.5, 0.7); });
+  }
+  function cometShatter(panX, big) {                                    // 얼음이 부서지는 짧은 고음 + 쉬익 하는 증기
+    if (!sfxOn()) return;
+    var c = ensure(); if (!c) return;
+    panX = panX || 0;
+    for (var i = 0; i < (big ? 10 : 5); i++) {
+      hiss('highpass', 5000 + Math.random() * 3000, 3000, 1, 0.05, 0.08, i * 0.035 + Math.random() * 0.03, panX + (Math.random() - 0.5) * 0.6, 0.3);
+      sweep('sine', 3000 + Math.random() * 2500, 1800 + Math.random() * 800, 0.12, 0.03, i * 0.04, panX, 0.4);
+    }
+    hiss('bandpass', 1400, 420, 0.8, big ? 1.8 : 0.9, big ? 0.15 : 0.09, 0.05, panX, 0.5, 0.1);
+  }
+
   // ================================================================ 블랙홀 (가이아 BH3) 사운드
   // 근거: NASA Chandra(2022) 페르세우스 은하단 블랙홀 소니피케이션 — 가운데 C보다 57옥타브 낮은 압력파를 끌어올린 '신음'
   //      LIGO GW150914 — 블랙홀 병합의 처프(진동수 ∝ (t_c − t)^(−3/8), 진폭 ∝ f^(2/3)) 뒤 감쇠 진동 '링다운'
@@ -1969,6 +1990,7 @@ var SFX = (function () {
 
   return {
     bhCharge: bhCharge, bhPull: bhPull, bhCollapse: bhCollapse, bhUlt: bhUlt,
+    cometCall: cometCall, cometShatter: cometShatter,
     meteorSummon: meteorSummon, meteorFall: meteorFall, meteorBreak: meteorBreak, meteorImpact: meteorImpact,
     novaUlt: novaUlt, warmNova: function () { reverb(); if (!crunch) crunch = makeDistortionCurve(400); },
     _tap: function () { var c = ensure(); if (!c) return null; var an = c.createAnalyser(); an.fftSize = 2048; compNode.connect(an); return an; },
@@ -2210,7 +2232,7 @@ var FX = (function () {
     geo.streak = new THREE.SphereGeometry(1, 8, 6);
     geo.box = new THREE.BoxGeometry(1, 1, 1);
     geo.novaShell = new THREE.IcosahedronGeometry(1, 3); geo.pearlRing = pearlRingGeo(0.9, 96, 14); geo.pulsar = pulsarGeo(10);
-    geo.rock = rockGeo(); geo.rim = new THREE.TorusGeometry(1, 0.22, 4, 16); geo.rim.rotateX(-Math.PI / 2);
+    geo.rock = rockGeo(); geo.ice = rockGeo(true); geo.rim = new THREE.TorusGeometry(1, 0.22, 4, 16); geo.rim.rotateX(-Math.PI / 2);
     geo.disk = new THREE.RingGeometry(0.35, 1, 96, 3); geo.disk.rotateX(-Math.PI / 2);   // 강착 원반 (XZ 평면, 안쪽 반지름 = 셰이더 uInner)
     geo.spike = new THREE.ConeGeometry(0.5, 1, 5); geo.spike.translate(0, 0.5, 0);
     geo.arrowShaft = new THREE.CylinderGeometry(0.02, 0.02, 0.9, 5); geo.arrowShaft.rotateX(Math.PI / 2);
@@ -2231,7 +2253,7 @@ var FX = (function () {
   ].join('\n');
 
   function PointPool(n, additive) {
-    this.n = n; this.items = []; this.free = [];
+    this.n = n; this.items = [];
     this.pos = new Float32Array(n * 3); this.col = new Float32Array(n * 4); this.size = new Float32Array(n);
     var g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
@@ -2247,33 +2269,44 @@ var FX = (function () {
     this.obj = new THREE.Points(g, this.mat);
     this.obj.frustumCulled = false; this.obj.renderOrder = additive ? 8 : 7;
     this.obj.userData.keep = true;
-    for (var i = 0; i < n; i++) { this.items.push({ i: i, on: false }); this.free.push(n - 1 - i); }
-    this.active = 0;
+    for (var i = 0; i < n; i++) this.items.push({ i: i, on: false });
+    this.active = 0; this.lo = 0; this.hi = 0; this.obj.visible = false;
   }
+  // 최적화: 항상 가장 앞의 빈 칸을 쓴다 → 살아 있는 입자가 버퍼 앞쪽 [0, hi) 에 모여 그 범위만 올리고 그리면 된다
+  // (예전: 되돌려 받은 칸을 먼저 쓰는 스택이라 입자가 버퍼 전체에 흩어져 매 프레임 거의 전부를 올렸음)
+  function takeSlot(pool) {
+    if (pool.active >= pool.n) return null;
+    var it = pool.items, i = pool.lo;
+    while (it[i].on) i++;                                    // lo 앞은 모두 사용 중 → 첫 빈 칸
+    pool.lo = i + 1; pool.active++;
+    it[i].on = true; return it[i];
+  }
+  function freeSlot(pool, p) { p.on = false; pool.active--; if (p.i < pool.lo) pool.lo = p.i; }
   PointPool.prototype.spawn = function () {
-    if (!this.free.length) return null;
-    var p = this.items[this.free.pop()];
-    p.on = true; p.t = 0; p.home = null; p.done = null; p.swirl = 0; p.fadeIn = 0.06; p.delay = 0; p.twinkle = 0; p.orb = null;
-    this.active++;
+    var p = takeSlot(this); if (!p) return null;
+    p.t = 0; p.home = null; p.done = null; p.swirl = 0; p.fadeIn = 0.06; p.delay = 0; p.twinkle = 0; p.orb = null;
     return p;
   };
   PointPool.prototype.kill = function (p) {
-    p.on = false; this.size[p.i] = 0; this.col[p.i * 4 + 3] = 0; this.free.push(p.i); this.active--;
+    freeSlot(this, p); this.size[p.i] = 0; this.col[p.i * 4 + 3] = 0;
   };
   PointPool.prototype.clear = function () {
     for (var i = 0; i < this.n; i++) if (this.items[i].on) this.kill(this.items[i]);
+    this.hi = 0; this.obj.geometry.setDrawRange(0, 0); this.obj.visible = false;
     this.flush();
   };
-  PointPool.prototype.flush = function () {
-    var g = this.obj.geometry;
-    g.attributes.position.needsUpdate = true; g.attributes.aColor.needsUpdate = true; g.attributes.aSize.needsUpdate = true;
+  // 최적화: 살아 있는 입자가 모인 앞쪽 [0, n) 만 GPU 로 올린다 (빈 풀 900개 전체를 매 프레임 올리지 않음)
+  PointPool.prototype.flush = function (n) {
+    var g = this.obj.geometry, A = [g.attributes.position, g.attributes.aColor, g.attributes.aSize];
+    n = n === undefined ? this.n : n;
+    for (var i = 0; i < 3; i++) { A[i].updateRange.offset = 0; A[i].updateRange.count = n * A[i].itemSize; A[i].needsUpdate = true; }
   };
   PointPool.prototype.update = function (dt) {
     if (!this.active && !this.dirty) return;
-    var pos = this.pos, col = this.col, size = this.size;
+    var pos = this.pos, col = this.col, size = this.size, hi = 0;
     for (var i = 0; i < this.n; i++) {
       var p = this.items[i]; if (!p.on) continue;
-      if (p.delay > 0) { p.delay -= dt; size[i] = 0; continue; }
+      if (p.delay > 0) { p.delay -= dt; size[i] = 0; hi = i + 1; continue; }
       p.t += dt;
       var k = p.t / p.life;
       if (k >= 1) { var d = p.done; this.kill(p); if (d) d(); continue; }
@@ -2306,9 +2339,11 @@ var FX = (function () {
       pos[j] = p.x; pos[j + 1] = p.y; pos[j + 2] = p.z;
       col[c4] = p.r0 + (p.r1 - p.r0) * k; col[c4 + 1] = p.g0 + (p.g1 - p.g0) * k; col[c4 + 2] = p.b0 + (p.b1 - p.b0) * k; col[c4 + 3] = a;
       size[i] = p.s0 + (p.s1 - p.s0) * (p.sizeEase ? 1 - (1 - k) * (1 - k) : k);
+      hi = i + 1;
     }
     this.dirty = this.active > 0;
-    this.flush();
+    this.flush(Math.max(hi, this.hi || 0));                           // 지난 프레임 범위까지: 방금 사라진 입자의 0 크기도 올라가야 함
+    this.hi = hi; this.obj.geometry.setDrawRange(0, hi); this.obj.visible = hi > 0;   // 비었으면 그리기 호출 자체를 생략
   };
 
   // o: pos, n, spread, dir, cone, speed, up, life, size, sizeEnd, color, colorEnd, grav, drag, alpha, floor, swirl, fadeIn, delay, twinkle, prism
@@ -2376,7 +2411,7 @@ var FX = (function () {
   function accrete(B, o) {
     var pool = o.pool || glow; if (!pool || !scene) return;
     var n = o.n || 1;
-    if (density !== 1 && n > 1) n = Math.max(1, Math.round(n * density));
+    if (density !== 1) { n *= density; n = Math.floor(n) + (Math.random() < n % 1 ? 1 : 0); if (!n) return; }   // 낮은 품질: 1개짜리 방출도 확률적으로 줄임
     for (var i = 0; i < n; i++) {
       var p = pool.spawn(); if (!p) break;
       var ob = p.orbS || (p.orbS = {}); p.orb = ob;
@@ -2403,7 +2438,7 @@ var FX = (function () {
 
   // ---------------------------------------------------------------- 큐브 파편 풀 (InstancedMesh)
   function ChunkPool(n) {
-    this.n = n; this.items = []; this.free = [];
+    this.n = n; this.items = [];
     var m = new THREE.MeshBasicMaterial({ color: 0xffffff });
     m.userData = { shared: true };
     this.obj = new THREE.InstancedMesh(geo.box, m, n);
@@ -2411,20 +2446,21 @@ var FX = (function () {
     this.obj.frustumCulled = false; this.obj.userData.keep = true;
     this.dummy = new THREE.Object3D();
     var zero = new THREE.Matrix4().makeScale(0, 0, 0);
-    for (var i = 0; i < n; i++) { this.items.push({ i: i, on: false }); this.free.push(n - 1 - i); this.obj.setMatrixAt(i, zero); this.obj.setColorAt(i, C.setHex(0xffffff)); }
-    this.zero = zero; this.active = 0;
+    for (var i = 0; i < n; i++) { this.items.push({ i: i, on: false }); this.obj.setMatrixAt(i, zero); this.obj.setColorAt(i, C.setHex(0xffffff)); }
+    this.zero = zero; this.active = 0; this.lo = 0; this.obj.count = 0; this.obj.visible = false;   // 살아 있는 조각 수만큼만 인스턴스를 그린다
   }
   ChunkPool.prototype.clear = function () {
-    for (var i = 0; i < this.n; i++) { var p = this.items[i]; if (p.on) { p.on = false; this.free.push(i); } this.obj.setMatrixAt(i, this.zero); }
-    this.active = 0; this.obj.instanceMatrix.needsUpdate = true;
+    for (var i = 0; i < this.n; i++) { this.items[i].on = false; this.obj.setMatrixAt(i, this.zero); }
+    this.active = 0; this.lo = 0; this.obj.count = 0; this.obj.visible = false; this.obj.instanceMatrix.needsUpdate = true;
   };
   ChunkPool.prototype.update = function (dt) {
     if (!this.active) return;
-    var d = this.dummy;
+    var d = this.dummy, hi = 0;
     for (var i = 0; i < this.n; i++) {
       var p = this.items[i]; if (!p.on) continue;
       p.t += dt; var k = p.t / p.life;
-      if (k >= 1) { p.on = false; this.free.push(i); this.active--; this.obj.setMatrixAt(i, this.zero); continue; }
+      if (k >= 1) { freeSlot(this, p); this.obj.setMatrixAt(i, this.zero); continue; }
+      hi = i + 1;
       p.vy -= p.grav * dt;
       if (p.flutter) { p.vx += Math.sin(p.t * 7 + i) * p.flutter * dt; p.vz += Math.cos(p.t * 6 + i * 2) * p.flutter * dt; p.vy = Math.max(p.vy, -1.4); }
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
@@ -2434,15 +2470,17 @@ var FX = (function () {
       d.position.set(p.x, p.y, p.z); d.rotation.set(p.rx, p.ry, p.rz); d.scale.set(p.sx * s, p.sy * s, p.sz * s);
       d.updateMatrix(); this.obj.setMatrixAt(i, d.matrix);
     }
-    this.obj.instanceMatrix.needsUpdate = true;
+    var im = this.obj.instanceMatrix;
+    im.updateRange.offset = 0; im.updateRange.count = hi * 16; im.needsUpdate = true;   // 그리는 [0, hi) 만 올림
+    this.obj.count = hi; this.obj.visible = hi > 0;
   };
   // o: pos, n, spread, speed, up, life, size|shape:[sx,sy,sz], color, grav, bounce, floor, flutter, dir, cone
   function chunkBurst(o) {
     if (!chunks || !scene) return;
     var n = Math.max(1, Math.round((o.n || 6) * density)), colors = Array.isArray(o.color) ? o.color : [o.color];
     for (var i = 0; i < n; i++) {
-      if (!chunks.free.length) return;
-      var p = chunks.items[chunks.free.pop()]; p.on = true; p.t = 0; chunks.active++;
+      var p = takeSlot(chunks); if (!p) return;
+      p.t = 0;
       var sr = o.spread || 0.2;
       p.x = o.pos.x + rnd(-sr, sr); p.y = o.pos.y + rnd(-sr, sr); p.z = o.pos.z + rnd(-sr, sr);
       var a = Math.random() * Math.PI * 2, sp = pick(o.speed || [1.5, 4]);
@@ -3223,7 +3261,7 @@ void main() {
   // 근거: NASA JPL CNEOS — 진입 때 앞쪽에 공기가 압축·가열된 충격파(bow shock)가 생겨 앞면이 가장 밝고, 녹아 깎이다 대부분 조각난다
   //      미국유성학회(AMS) — 나트륨·철 = 노랑·주황, 마그네슘·니켈 = 초록, 붉은빛 = 달궈진 공기, 지나간 뒤 잠시 남는 잔광 꼬리
   //      NASA 크레이터 자료·Ames 충돌 실험 — 충격파 → 깔때기 모양 분출물 커튼(탄도 궤적) → 솟은 테두리 + 바깥으로 뻗는 광조
-  function rockGeo() {                                                  // 울퉁불퉁한 로우폴리 바위: 검은 현무암 + 달아오른 균열
+  function rockGeo(icy) {                                               // 울퉁불퉁한 로우폴리 바위: 검은 현무암 + 달아오른 균열 (icy: 먼지 섞인 얼음 핵 + 흰 얼음 조각)
     var g = new THREE.IcosahedronGeometry(1, 1), pos = g.attributes.position, jit = {}, col = [];
     for (var i = 0; i < pos.count; i++) {                               // 같은 꼭짓점은 같은 만큼 변형 (틈이 생기지 않게)
       var key = pos.getX(i).toFixed(3) + ',' + pos.getY(i).toFixed(3) + ',' + pos.getZ(i).toFixed(3);
@@ -3231,72 +3269,97 @@ void main() {
       pos.setXYZ(i, pos.getX(i) * jit[key], pos.getY(i) * jit[key] * 0.9, pos.getZ(i) * jit[key]);
     }
     for (var f = 0; f < pos.count / 3; f++) {
-      var hot = Math.random() < 0.3, c = hot ? [1, 0.45 + Math.random() * 0.2, 0.12] : [0.16 + Math.random() * 0.08, 0.1, 0.08];
+      var hot = Math.random() < (icy ? 0.4 : 0.3), q = Math.random();
+      var c = icy ? (hot ? [0.72 + q * 0.2, 0.9 + q * 0.08, 1] : [0.12 + q * 0.06, 0.15 + q * 0.06, 0.22]) : (hot ? [1, 0.45 + q * 0.2, 0.12] : [0.16 + q * 0.08, 0.1, 0.08]);
       for (var v = 0; v < 3; v++) col.push(c[0], c[1], c[2]);
     }
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     return g;
   }
+  // 운석 팔레트. fire = 용의 숨결 (나트륨·철의 노랑·주황)
+  //            comet = 혜성 — NASA: 먼지 섞인 얼음 핵, 탄소 분자(C₂)가 내는 청록 코마, 일산화탄소 이온(CO⁺)의 곧은 파란 이온 꼬리, 햇빛에 녹아 뿜어지는 증기·먼지 꼬리
+  var MPAL = {
+    fire: { geo: 'rock', shock: 0xfff0b0, train: 0xff6a1e, halo: 0xffa040, warn: 0xff6a20, spark: [0xffffff, 0xffd060, 0xff8a2a], sparkEnd: 0xb02a10, smoke: 0x3a2a28,
+      flick: [0x7aff8a, 0x9affc0], brk: 0xc8ffc8, frag: 0xffb050, fragSpark: [0xffd060, 0xff8a2a], fragHit: 0xffc060, light: 0xffa040, star: 0xffe0a0,
+      ball: [0xffffff, 0xffc050, 0xff4a10, 0xff8a30], eject: [0xffe080, 0xff9a30, 0xff5a10], ejectEnd: 0x6a1a08, chunk: [0x3a2a22, 0x5a3a28, 0xff7a2a], dust: 0x5a4a40, ring: 0xff8a30, crack: 0xff7a20, call: [0xffffff, 0xffd060, 0xff7a2a], callStar: 0xffd080 },
+    comet: { geo: 'ice', shock: 0xe2f6ff, train: 0x3a8cff, halo: 0x52c8ff, warn: 0x4aa8ff, spark: [0xffffff, 0xaee8ff, 0x4a9cff], sparkEnd: 0x1a3a9a, smoke: 0xd6ecff,
+      flick: [0x6affd0, 0xa8fff0], brk: 0xd8f4ff, frag: 0x8fd0ff, fragSpark: [0xcff0ff, 0x5ab0ff], fragHit: 0x9fdcff, light: 0x6ab8ff, star: 0xd8f0ff,
+      ball: [0xffffff, 0x9fe0ff, 0x2a6aff, 0x7ad8ff], eject: [0xe8faff, 0x9fd8ff, 0x4a8cff], ejectEnd: 0x1a2a6a, chunk: [0x2a3040, 0x4a5a70, 0xbfe8ff], dust: 0xd8ecff, ring: 0x6ab8ff, crack: 0x5ab8ff, call: [0xffffff, 0xaee8ff, 0x4a9cff], callStar: 0xbfe8ff, comet: true }
+  };
+  function mpal(kind) { return MPAL[kind] || MPAL.fire; }
   var rockMat = null, rimMat = null;
   function after(delay, fn) {                                           // FX 시간 기준 지연 실행 (히트스톱·일시정지와 동기)
     // 갱신 루프는 수명이 다한 항목을 갱신 없이 지우므로, 긴 수명으로 두고 첫 갱신에서 실행한 뒤 스스로 끝낸다
     var fired = false;
     addTransient(new THREE.Object3D(), 1e3, function (ob, k, dt, e) { if (fired) return; fired = true; if (e) e.t = e.life; fn(); }, delay);
   }
+  // o: size, dur, lite, delay, kind('fire'|'comet'), giant(궁극기 거대 혜성: 쪼개지지 않고 코마·꼬리가 크다), onBreak, onArrive
   function meteor(from, to, o) {
     o = o || {};
     if (!rockMat) rockMat = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false });
+    var pl = mpal(o.kind), cm = !!pl.comet, gi = !!o.giant;
     var s = o.size || 1, dur = o.dur || 0.42, lite = !!o.lite, from0 = from.clone(), to0 = to.clone();
     var grp = new THREE.Group();
-    var rock = new THREE.Mesh(geo.rock, rockMat); rock.scale.setScalar(0.3 * s); grp.add(rock);
-    var shock = mesh(geo.sphere, 0xfff0b0, { opacity: 0.9 }); shock.scale.set(0.42 * s, 0.42 * s, 0.6 * s); shock.position.z = 0.12 * s; grp.add(shock); // 앞쪽 충격파
-    var train = mesh(geo.streak, 0xff6a1e, { opacity: 0.75 }); grp.add(train);                                                                       // 플라스마 꼬리
-    var halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.dot, color: 0xffa040, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
-    halo.scale.setScalar(2.6 * s); halo.renderOrder = 8; grp.add(halo);
+    var rock = new THREE.Mesh(geo[pl.geo], rockMat); rock.scale.setScalar(0.3 * s); grp.add(rock);
+    var shOp = gi ? 0.3 : cm ? 0.5 : 0.9;                               // 혜성은 얼음 핵이 비쳐 보이게 충격파를 옅게
+    var shock = mesh(geo.sphere, pl.shock, { opacity: shOp }); shock.scale.set(0.42 * s, 0.42 * s, 0.6 * s); shock.position.z = 0.12 * s; grp.add(shock); // 앞쪽 충격파
+    var train = mesh(geo.streak, pl.train, { opacity: 0.75 }); grp.add(train);                                                                       // 플라스마 꼬리 (혜성: 곧은 이온 꼬리)
+    var halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.dot, color: pl.halo, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    halo.scale.setScalar((gi ? 2.3 : cm ? 3.0 : 2.6) * s); halo.renderOrder = 8; grp.add(halo);                                                       // 혜성은 코마가 크다 (거대 혜성은 화면을 덮지 않게 절제)
+    var ion = null;
+    if (cm) { ion = mesh(geo.streak, 0x9fd8ff, { opacity: 0.6 }); grp.add(ion); }                                                                    // 이온 꼬리의 밝은 심
     grp.position.copy(from0); grp.lookAt(to0);
-    shockRing(new THREE.Vector3(to0.x, 0, to0.z), 0xff6a20, 1.9 * s, 0.35 * s, dur, { thin: true, opacity: 0.65, delay: o.delay });   // 떨어질 자리 예고
-    var spin = new THREE.Vector3(rnd(-9, 9), rnd(-9, 9), rnd(-9, 9)), acc = 0, broke = false, P = new THREE.Vector3();
+    shockRing(new THREE.Vector3(to0.x, 0, to0.z), pl.warn, 1.9 * s, 0.35 * s, dur, { thin: true, opacity: 0.65, delay: o.delay });   // 떨어질 자리 예고
+    if (gi) decal(tex.dot, 0x000000, new THREE.Vector3(to0.x, 0, to0.z), 2.6 * s, dur + 0.05, { normal: true, opacity: 0.75, grow: true, growSpeed: 1, hold: 0.97, delay: o.delay });   // 거대 혜성의 그림자
+    var spin = new THREE.Vector3(rnd(-9, 9), rnd(-9, 9), rnd(-9, 9)).multiplyScalar(gi ? 0.25 : 1), acc = 0, broke = false, P = new THREE.Vector3(), side = new THREE.Vector3();
+    side.set(to0.z - from0.z, 0, from0.x - to0.x); if (side.lengthSq() < 1e-6) side.set(1, 0, 0); side.normalize();   // 먼지 꼬리가 휘어지는 방향 (진행 방향의 옆)
     addTransient(grp, dur, function (ob, k, dt) {
       P.copy(from0).lerp(to0, Math.pow(k, 1.15)); ob.position.copy(P);  // 살짝 가속하며 떨어진다
       rock.rotation.x += spin.x * dt; rock.rotation.y += spin.y * dt; rock.rotation.z += spin.z * dt;
       var fl = 0.85 + Math.random() * 0.3;
-      halo.material.opacity = fl; shock.material.opacity = 0.9 * fl;
-      train.scale.set(0.34 * s, 0.34 * s, (1.6 + 1.6 * k) * s); train.position.z = -train.scale.z * 0.9;
+      halo.material.opacity = fl * (gi ? 0.8 : 1); shock.material.opacity = shOp * fl;
+      if (cm) {
+        train.scale.set(0.2 * s, 0.2 * s, (2.8 + 2.4 * k) * s); train.position.z = -train.scale.z * 0.95;
+        ion.scale.set(0.07 * s, 0.07 * s, (2.4 + 2 * k) * s); ion.position.z = -ion.scale.z * 0.95; ion.material.opacity = 0.45 + 0.3 * fl;
+      } else { train.scale.set(0.34 * s, 0.34 * s, (1.6 + 1.6 * k) * s); train.position.z = -train.scale.z * 0.9; }
       acc += dt;
-      while (acc > 0.012) {
-        acc -= 0.012;
-        emitTo(glow, { pos: P, n: lite ? 1 : 2, spread: 0.12 * s, speed: [0.2, 1.2], life: [0.18, 0.4], size: [0.25 * s, 0.45 * s], sizeEnd: 0.1, color: [0xffffff, 0xffd060, 0xff8a2a], colorEnd: 0xb02a10, drag: 2 });
-        if (!lite) emitTo(smoke, { pos: P, n: 1, spread: 0.1, speed: [0, 0.3], up: [0, 0.3], life: [0.7, 1.1], size: [0.3 * s, 0.5 * s], sizeEnd: 2.2, sizeEase: true, color: 0x3a2a28, alpha: 0.35, drag: 1 });
-        if (Math.random() < 0.08) emitTo(glow, { pos: P, n: 1, spread: 0.1, speed: [0.5, 2], life: [0.12, 0.25], size: [0.2, 0.3], sizeEnd: 0, color: [0x7aff8a, 0x9affc0] });   // 마그네슘·니켈의 초록 번쩍임
+      var step = gi ? 0.016 : lite ? 0.02 : 0.012;   // 궁극기의 작은 유성들은 꼬리를 성기게 (입자 풀 포화 방지)
+      while (acc > step) {
+        acc -= step;
+        emitTo(glow, { pos: P, n: lite ? 1 : 2, spread: 0.12 * s, speed: [0.2, 1.2], life: [0.18, 0.4], size: [0.25 * s, 0.45 * s], sizeEnd: 0.1, color: pl.spark, colorEnd: pl.sparkEnd, drag: 2 });
+        if (!lite) emitTo(smoke, cm ? { pos: P, n: 1, spread: 0.15 * s, vel: _b1.copy(side).multiplyScalar(rnd(0.3, 1.2) * s), life: [0.8, 1.3], size: [0.35 * s, 0.6 * s], sizeEnd: 2.4, sizeEase: true, color: pl.smoke, alpha: 0.3, drag: 0.8 }   // 휘어지는 먼지·증기 꼬리
+          : { pos: P, n: 1, spread: 0.1, speed: [0, 0.3], up: [0, 0.3], life: [0.7, 1.1], size: [0.3 * s, 0.5 * s], sizeEnd: 2.2, sizeEase: true, color: pl.smoke, alpha: 0.35, drag: 1 });
+        if (Math.random() < (cm ? 0.25 : 0.08)) emitTo(glow, { pos: P, n: 1, spread: 0.1 * s, speed: [0.5, 2], life: [0.12, 0.3], size: [0.2, 0.3], sizeEnd: 0, color: pl.flick, twinkle: cm ? 30 : 0 });   // 초록 번쩍임 (운석: 마그네슘·니켈 / 혜성: C₂)
       }
-      if (!broke && !lite && k > 0.68) {                                 // 조각난다: 섬광과 함께 파편이 갈라져 나감
+      if (gi && Math.random() < dt * 14) chunkBurst({ pos: P, n: 1, spread: 0.3 * s, speed: [0.3, 1.2], up: [-1, 1], size: [0.1, 0.2], color: [0xdff4ff, 0x9fd0ff, 0x4a5a70], life: [0.6, 1], grav: 3, bounce: 0.2 });   // 떨어져 나가는 얼음 조각
+      if (!broke && !lite && !gi && k > 0.68) {                           // 조각난다: 섬광과 함께 파편이 갈라져 나감
         broke = true;
-        sprite(tex.star, 0xc8ffc8, 2.4 * s, 0.14, { pos: P.clone(), from: 0.3, rot: rnd(0, 1.5), noDepth: true });
+        sprite(tex.star, pl.brk, 2.4 * s, 0.14, { pos: P.clone(), from: 0.3, rot: rnd(0, 1.5), noDepth: true });
         if (o.onBreak) o.onBreak(P.clone());
-        for (var f = 0; f < 3; f++) fragment(P.clone(), new THREE.Vector3(to0.x + rnd(-1.4, 1.4), 0.1, to0.z + rnd(-1.4, 1.4)), (1 - k) * dur * rnd(0.95, 1.3), 0.35 * s);
+        for (var f = 0; f < 3; f++) fragment(P.clone(), new THREE.Vector3(to0.x + rnd(-1.4, 1.4), 0.1, to0.z + rnd(-1.4, 1.4)), (1 - k) * dur * rnd(0.95, 1.3), 0.35 * s, pl);
       }
     }, o.delay);
     if (o.onArrive) after((o.delay || 0) + dur, function () { o.onArrive(to0); });
     return grp;
   }
-  function fragment(from, to, dur, s) {
-    var grp = new THREE.Group(), rock = new THREE.Mesh(geo.rock, rockMat); rock.scale.setScalar(0.3 * s); grp.add(rock);
-    var hl = mesh(geo.sphere, 0xffb050, { opacity: 0.7 }); hl.scale.setScalar(0.35 * s); grp.add(hl);
+  function fragment(from, to, dur, s, pl) {
+    var grp = new THREE.Group(), rock = new THREE.Mesh(geo[pl.geo], rockMat); rock.scale.setScalar(0.3 * s); grp.add(rock);
+    var hl = mesh(geo.sphere, pl.frag, { opacity: 0.7 }); hl.scale.setScalar(0.35 * s); grp.add(hl);
     var P = new THREE.Vector3(), acc = 0;
     addTransient(grp, dur, function (ob, k, dt) {
       P.copy(from).lerp(to, k); ob.position.copy(P); rock.rotation.x += dt * 12; rock.rotation.y += dt * 9;
       acc += dt;
-      while (acc > 0.02) { acc -= 0.02; emitTo(glow, { pos: P, n: 1, spread: 0.05, speed: [0, 0.4], life: [0.15, 0.3], size: [0.14, 0.24], sizeEnd: 0.1, color: [0xffd060, 0xff8a2a] }); }
+      while (acc > 0.02) { acc -= 0.02; emitTo(glow, { pos: P, n: 1, spread: 0.05, speed: [0, 0.4], life: [0.15, 0.3], size: [0.14, 0.24], sizeEnd: 0.1, color: pl.fragSpark }); }
     });
     after(dur, function () {                                            // 작은 착탄
-      sprite(tex.dot, 0xffc060, 1.6, 0.18, { pos: to.clone().setY(0.4), from: 0.3 });
-      emitTo(glow, { pos: to, n: 6, dir: UP, cone: 0.9, speed: [2, 4], life: [0.3, 0.6], size: [0.1, 0.18], sizeEnd: 0, color: [0xffd060, 0xff7a2a], grav: 12, floor: 0.05 });
+      sprite(tex.dot, pl.fragHit, 1.6, 0.18, { pos: to.clone().setY(0.4), from: 0.3 });
+      emitTo(glow, { pos: to, n: 6, dir: UP, cone: 0.9, speed: [2, 4], life: [0.3, 0.6], size: [0.1, 0.18], sizeEnd: 0, color: pl.fragSpark, grav: 12, floor: 0.05 });
       decal(tex.scorch, 0x000000, to.clone().setY(0), 0.5, 1.6, { normal: true, opacity: 0.6, hold: 0.5 });
     });
   }
-  function craterRim(gr, r) {                                           // 파편이 쌓인 솟은 테두리: 땅에서 솟았다가 가라앉음
-    if (!rimMat) rimMat = new THREE.MeshLambertMaterial({ color: 0x5a4030 });
-    var m = new THREE.Mesh(geo.rim, rimMat); m.position.set(gr.x, -0.25, gr.z); m.scale.set(r, 1, r); m.rotation.y = rnd(0, 6);
+  function craterRim(gr, r, icy) {                                      // 파편이 쌓인 솟은 테두리: 땅에서 솟았다가 가라앉음 (icy: 서리 덮인 회청색)
+    if (!rimMat) rimMat = [new THREE.MeshLambertMaterial({ color: 0x5a4030 }), new THREE.MeshLambertMaterial({ color: 0x6a7a92 })];
+    var m = new THREE.Mesh(geo.rim, rimMat[icy ? 1 : 0]); m.position.set(gr.x, -0.25, gr.z); m.scale.set(r, 1, r); m.rotation.y = rnd(0, 6);
     addTransient(m, 2.4, function (ob, k) {
       ob.position.y = k < 0.06 ? -0.25 + 0.27 * (k / 0.06) : k > 0.75 ? 0.02 - 0.3 * ((k - 0.75) / 0.25) : 0.02;
       ob.scale.y = 0.6 + 0.4 * Math.min(1, k * 10);
@@ -3304,24 +3367,50 @@ void main() {
   }
   function meteorImpact(p, o) {
     o = o || {};
-    var pw = o.power || 1, lite = !!o.lite, gr = (o.ground || new THREE.Vector3(p.x, 0, p.z)).clone(), P = p.clone();
+    var pl = mpal(o.kind), pw = o.power || 1, lite = !!o.lite, gr = (o.ground || new THREE.Vector3(p.x, 0, p.z)).clone(), P = p.clone();
     sprite(tex.dot, 0xffffff, 6 * pw, 0.2, { pos: P, from: 0.2, noDepth: true });                                 // ① 접촉·압축: 섬광
-    sprite(tex.star, 0xffe0a0, 5 * pw, 0.26, { pos: P, from: 0.25, rot: rnd(0, 1.5), noDepth: true });
-    flash(P, 0xffa040, 5 * pw, 0.45);
-    novaShell(new THREE.Vector3(P.x, Math.max(0.6, P.y), P.z), 0.2, 2.1 * pw, 0.6, { pal: [0xffffff, 0xffc050, 0xff4a10, 0xff8a30], amp: 0.35, opacity: lite ? 0.7 : 1 }); // ② 불덩이
+    sprite(tex.star, pl.star, 5 * pw, 0.26, { pos: P, from: 0.25, rot: rnd(0, 1.5), noDepth: true });
+    flash(P, pl.light, 5 * pw, 0.45);
+    novaShell(new THREE.Vector3(P.x, Math.max(0.6, P.y), P.z), 0.2, 2.1 * pw, 0.6, { pal: pl.ball, amp: pl.comet ? 0.2 : 0.35, opacity: lite ? 0.7 : 1 }); // ② 불덩이
     var g2 = new THREE.Vector3(gr.x, 0.2, gr.z);                                                                    // ③ 굴착: 깔때기 모양 분출물 커튼 (탄도 궤적)
-    emitTo(glow, { pos: g2, n: lite ? 16 : 34, dir: UP, cone: 0.8, speed: [4, 9], life: [0.5, 1], size: [0.14, 0.3], sizeEnd: 0.2, color: [0xffe080, 0xff9a30, 0xff5a10], colorEnd: 0x6a1a08, grav: 14, floor: 0.05, drag: 0.3 });
-    chunkBurst({ pos: new THREE.Vector3(gr.x, 0.3, gr.z), n: lite ? 6 : 12, speed: [2.5, 6], up: [4, 8], size: [0.14, 0.26], color: [0x3a2a22, 0x5a3a28, 0xff7a2a], life: [1, 1.6], grav: 16, bounce: 0.3 });
-    emitTo(smoke, { pos: new THREE.Vector3(gr.x, 0.4, gr.z), n: lite ? 6 : 12, spread: 0.6, speed: [1, 3], up: [0.6, 2], life: [1.2, 2], size: [1, 1.8], sizeEnd: 2.6, sizeEase: true, color: 0x5a4a40, alpha: 0.4, drag: 1.5 });
-    shockRing(gr, 0xff8a30, 0.3, 3.4 * pw, 0.5, {});                                                               // ④ 지면 충격파
+    emitTo(glow, { pos: g2, n: lite ? 16 : 34, dir: UP, cone: 0.8, speed: [4, 9], life: [0.5, 1], size: [0.14, 0.3], sizeEnd: 0.2, color: pl.eject, colorEnd: pl.ejectEnd, grav: 14, floor: 0.05, drag: 0.3 });
+    chunkBurst({ pos: new THREE.Vector3(gr.x, 0.3, gr.z), n: lite ? 6 : 12, speed: [2.5, 6], up: [4, 8], size: [0.14, 0.26], color: pl.chunk, life: [1, 1.6], grav: 16, bounce: 0.3 });
+    emitTo(smoke, { pos: new THREE.Vector3(gr.x, 0.4, gr.z), n: lite ? 6 : 12, spread: 0.6, speed: [1, 3], up: [0.6, 2], life: [1.2, 2], size: [1, 1.8], sizeEnd: 2.6, sizeEase: true, color: pl.dust, alpha: 0.4, drag: 1.5 });
+    shockRing(gr, pl.ring, 0.3, 3.4 * pw, 0.5, {});                                                                // ④ 지면 충격파
     decal(tex.scorch, 0x000000, gr, 1.5 * pw, 3.2, { normal: true, opacity: 0.8, hold: 0.6 });                      // ⑤ 크레이터 바닥 + 녹은 광조
-    decal(tex.crack, 0xff7a20, gr, 2.8 * pw, 1.8, { grow: true, hold: 0.4, opacity: 0.9 });
-    if (!lite) craterRim(gr, 1.05 * pw);                                                                            // ⑥ 솟은 테두리
+    decal(tex.crack, pl.crack, gr, 2.8 * pw, 1.8, { grow: true, hold: 0.4, opacity: 0.9 });
+    if (!lite) craterRim(gr, 1.05 * pw, pl.comet);                                                                  // ⑥ 솟은 테두리
+    if (pl.comet) {                                                                                                 // ⑦ 혜성: 얼음 가시 + 서리 + 솟구치는 증기
+      spikes(gr, 0xbfeaff, lite ? 4 : 7, 0.9 * pw, 1.2 * pw, 0.9, { emissive: 0x3a8ad8, ei: 0.7, opacity: 0.88 });
+      decal(tex.frost, 0x7fd0ff, gr, 3.2 * pw, 2, { grow: true, hold: 0.5, opacity: 0.8 });
+      if (!lite) emitTo(smoke, { pos: g2, n: 8, spread: 0.4 * pw, speed: [0.2, 0.8], up: [2, 4], life: [1, 1.6], size: [0.8, 1.3], sizeEnd: 2.4, sizeEase: true, color: 0xeaf6ff, alpha: 0.35, drag: 1.2 });
+    }
   }
-  function meteorCall(pos) {                                            // 지팡이 끝에서 하늘로 솟는 불꽃 신호
-    sprite(tex.star, 0xffd080, 2.4, 0.18, { pos: pos, from: 0.2, rot: rnd(0, 1.5), noDepth: true });
-    emitTo(glow, { pos: pos, n: 18, dir: UP, cone: 0.25, speed: [8, 14], life: [0.3, 0.5], size: [0.16, 0.3], sizeEnd: 0, color: [0xffffff, 0xffd060, 0xff7a2a], drag: 0.5 });
-    shockRing(pos, 0xffa040, 0.1, 1.2, 0.3, { thin: true, y: pos.y });
+  function meteorCall(pos, kind) {                                      // 지팡이 끝에서 하늘로 솟는 신호
+    var pl = mpal(kind);
+    sprite(tex.star, pl.callStar, 2.4, 0.18, { pos: pos, from: 0.2, rot: rnd(0, 1.5), noDepth: true });
+    emitTo(glow, { pos: pos, n: 18, dir: UP, cone: 0.25, speed: [8, 14], life: [0.3, 0.5], size: [0.16, 0.3], sizeEnd: 0, color: pl.call, drag: 0.5 });
+    shockRing(pos, pl.halo, 0.1, 1.2, 0.3, { thin: true, y: pos.y });
+  }
+  // 거대 혜성 충돌 (혜성 궁극기): 눈부신 섬광 → 청백 불덩이 → 얼음 가시 고리 → 증기 기둥 → 범위 끝까지 퍼지는 충격파
+  function cometCrash(p, o) {
+    o = o || {};
+    var gr = (o.ground || new THREE.Vector3(p.x, 0, p.z)).clone(), P = p.clone(), R = o.R || 7;
+    meteorImpact(P, { kind: 'comet', power: 2.6, ground: gr });
+    sprite(tex.dot, 0xffffff, 18, 0.35, { pos: P, from: 0.1, noDepth: true });
+    sprite(tex.star, 0xd8f0ff, 15, 0.45, { pos: P, from: 0.15, rot: 0.3, noDepth: true, spin: 1.2 });
+    if (hooks.screenFlash) hooks.screenFlash('#eaf6ff', 0.6);
+    flash(P, 0x9fdcff, 9, 0.7);
+    spikes(gr, 0xcff0ff, 14, 2.6, 2.4, 1.6, { emissive: 0x3a8ad8, ei: 0.8, opacity: 0.9, thick: 1.6, delay: 0.05 });
+    shockRing(gr, 0xffffff, 0.6, R * 1.15, 0.8, {});
+    for (var i = 0; i < 3; i++) shockRing(gr, i % 2 ? 0x6ab8ff : 0xcff0ff, 0.5, R * (0.7 + i * 0.25), 0.9, { thin: true, opacity: 0.7, delay: 0.08 + i * 0.1 });
+    decal(tex.frost, 0x9fdcff, gr, R * 1.2, 3.2, { grow: true, growSpeed: 3, hold: 0.6, opacity: 0.55 });
+    decal(tex.crack, 0x5ab8ff, gr, R * 0.9, 2.4, { grow: true, growSpeed: 6, hold: 0.5, opacity: 0.9 });
+    craterRim(gr, 2.6, true);
+    emitTo(smoke, { pos: new THREE.Vector3(gr.x, 0.5, gr.z), n: 22, spread: 1.2, speed: [0.3, 1.2], up: [3, 6], life: [1.6, 2.4], size: [1.4, 2.2], sizeEnd: 2.6, sizeEase: true, color: 0xeaf6ff, alpha: 0.38, drag: 1 });   // 증기 기둥
+    emitTo(glow, { pos: new THREE.Vector3(gr.x, 0.4, gr.z), n: 70, dir: UP, cone: 1.1, speed: [5, 13], life: [0.8, 1.5], size: [0.2, 0.4], sizeEnd: 0.1, color: [0xffffff, 0xcff0ff, 0x7ad8ff, 0x4a8cff], grav: 12, floor: 0.05, drag: 0.4, twinkle: 16 });
+    chunkBurst({ pos: new THREE.Vector3(gr.x, 0.4, gr.z), n: 30, spread: 1.4, speed: [3, 8], up: [5, 11], size: [0.16, 0.34], color: [0x2a3040, 0x4a5a70, 0xbfe8ff, 0xffffff], life: [1.3, 2], grav: 16, bounce: 0.3 });
+    shake(1.6);
   }
 
   // ================================================================ 블랙홀 (가이아 BH3)
@@ -3513,12 +3602,13 @@ void main() {
     var from = (o.from || center).clone(), C0 = center.clone(), R = o.R || 1.2, rise = o.rise || 0.45, open = o.open || 0.95, life = o.life || 2.4;
     var gnd = (o.ground || new THREE.Vector3(center.x, 0, center.z)).clone(), rad = o.radius || 7, full = density >= 0.7;
     var bs = singularity({ spin: 1.8, hi: true, tilt: new THREE.Quaternion().setFromEuler(new THREE.Euler(0.22, 0, -0.12)) }), B = bs.basis;
-    var feeds = [], emT = 0, dustT = 0, lightT = 0;
+    var feeds = [], emT = 0, dustT = 0, lightT = 0, stepN = 0, QUOTA = 3;   // 조석 흐름은 한 번에 최대 3줄기만 방출 (입자 풀 900개 포화 방지)
     decal(tex.swirl, BH_VIO, gnd, rad * 1.7, life + 0.5, { grow: true, growSpeed: 1.4, spin: -1.4, hold: 0.85, opacity: 0.9, rot: 0 });
     bs.grp.position.copy(from);
     addTransient(bs.grp, life, function (ob, k, dt) {
       var t = k * life;
       if (t < rise) ob.position.lerpVectors(from, C0, 1 - Math.pow(1 - t / rise, 2)); else ob.position.copy(C0);
+      stepN++;
       var gx = Math.min(1, Math.max(0, (t - rise) / (open - rise))), u = Math.max(0, (t - open) / Math.max(0.01, life - open));
       var g = 0.14 + (R - 0.14) * (t < rise ? 0 : easeBack(gx));
       if (t > life - 0.14) g *= Math.max(0, (life - t) / 0.14);             // 마지막 순간 한 점으로
@@ -3528,10 +3618,11 @@ void main() {
       while (emT > 0.016) {
         emT -= 0.016;
         if (t > rise) accrete(B, { n: full ? 3 : 2, r: [R * 2.6, R * 6], h: [0, R * 1.5], rin: R * 1.1, w0: [1.4, 2.4], pw: 1.25, life: [0.55, 0.9], size: [0.14, 0.3], sizeEnd: 0.3, color: BH_GLOW });
-        for (var fi = feeds.length - 1; fi >= 0; fi--) {                  // 조석 흐름: 늘어나는 적의 몸에서 원반으로
+        for (var fi = feeds.length - 1; fi >= 0; fi--) {                  // 조석 흐름: 늘어나는 적의 몸에서 원반으로 (많으면 돌아가며)
           var f = feeds[fi]; f.t += 0.016;
           if (f.t > f.dur) { feeds.splice(fi, 1); continue; }
-          accrete(B, { n: 2, from: f.from, spread: 0.35, rin: R * 1.1, w0: [1.2, 2], pw: 1.7, life: [0.45, 0.7], size: [0.16, 0.28], sizeEnd: 0.3, color: f.colors, colorEnd: BH_AMB });
+          if (feeds.length > QUOTA && (stepN + fi) % feeds.length >= QUOTA) continue;
+          accrete(B, { n: 1, from: f.from, spread: 0.35, rin: R * 1.1, w0: [1.2, 2], pw: 1.7, life: [0.45, 0.7], size: [0.16, 0.28], sizeEnd: 0.3, color: f.colors, colorEnd: BH_AMB });
         }
       }
       dustT += dt;
@@ -3549,7 +3640,7 @@ void main() {
       basis: B,
       pull: function (p, dur, colors) { feeds.push({ from: p.clone(), t: 0, dur: dur, colors: colors }); },
       eat: function (p, colors) {
-        accrete(B, { n: 18, from: p, spread: 0.5, rin: R * 1.1, w0: [1.6, 2.6], pw: 1.5, life: [0.35, 0.55], size: [0.18, 0.32], sizeEnd: 0.3, color: colors, colorEnd: 0xffffff });
+        accrete(B, { n: 10, from: p, spread: 0.5, rin: R * 1.1, w0: [1.6, 2.6], pw: 1.5, life: [0.35, 0.55], size: [0.18, 0.32], sizeEnd: 0.3, color: colors, colorEnd: 0xffffff });
         _b4.copy(bs.grp.position).addScaledVector(B.u, rnd(-1, 1) * R * 2.2).addScaledVector(B.w, rnd(-1, 1) * R * 2.2);
         sprite(tex.star, 0xffe6c4, 2.6, 0.22, { pos: _b4.clone(), from: 0.2, rot: rnd(0, 1.5), noDepth: true });   // 원반이 번쩍
         sprite(tex.dot, BH_AMB, 3.2, 0.3, { pos: bs.grp.position.clone(), from: 0.6, opacity: 0.6 });
@@ -3800,6 +3891,7 @@ void main() {
     tryDo(function () { binaryInspiral(P.clone(), { dur: 0.4, rise: 0.1, from: P.clone(), ground: P.clone(), R: 3 }); });
     tryDo(function () { whiteDwarfMerger(P.clone(), { ground: P.clone(), R: 3 }); });
     tryDo(function () { meteor(P.clone().add(new THREE.Vector3(0, 3, 0)), P.clone(), { dur: 0.3 }); meteorImpact(P.clone(), { ground: P.clone() }); meteorCall(P.clone()); });
+    tryDo(function () { meteor(P.clone().add(new THREE.Vector3(0, 3, 0)), P.clone(), { dur: 0.3, kind: 'comet', giant: true, size: 2 }); cometCrash(P.clone(), { ground: P.clone(), R: 3 }); });
     tryDo(function () { projectile(P.clone(), P.clone().add(D), { el: 'blackhole', kind: 'blackhole', dur: 5 }); bhCharge(function (v) { return v.copy(P); }, 0.3); bhLaunch(P.clone(), D.clone()); });
     tryDo(function () { bhOpen(P.clone(), { ground: P.clone(), victim: P.clone().add(D) }); bhCollapse(P.clone(), { ground: P.clone(), big: true }); bhUltHole(P.clone(), { ground: P.clone(), life: 0.5, rise: 0.1, open: 0.2 }); });
     ['orb', 'fireball', 'arrow'].forEach(function (k) {
@@ -3872,7 +3964,7 @@ void main() {
     sprite: sprite, flash: flash, decal: decal, shockRing: shockRing, pillar: pillar, blast: blast, spikes: spikes, bolt: bolt,
     Trail: Trail, slashArc: slashArc, thrustStreak: thrustStreak, groundSlam: groundSlam, chargeAt: chargeAt, projectile: projectile,
     bhCharge: bhCharge, bhLaunch: bhLaunch, bhOpen: bhOpen, bhCollapse: bhCollapse, bhUltHole: bhUltHole, diskMat: diskMat, after: after,
-    impact: impact, novaCollapse: novaCollapse, novaBreakout: novaBreakout, binaryInspiral: binaryInspiral, whiteDwarfMerger: whiteDwarfMerger, inspiralRatio: inspiralRatio, meteor: meteor, meteorImpact: meteorImpact, meteorCall: meteorCall, debris: debris, deathBurst: deathBurst, lootOrbs: lootOrbs, levelUp: levelUp, victory: victory, dust: dust, hurtBurst: hurtBurst,
+    impact: impact, novaCollapse: novaCollapse, novaBreakout: novaBreakout, binaryInspiral: binaryInspiral, whiteDwarfMerger: whiteDwarfMerger, inspiralRatio: inspiralRatio, meteor: meteor, meteorImpact: meteorImpact, meteorCall: meteorCall, cometCrash: cometCrash, debris: debris, deathBurst: deathBurst, lootOrbs: lootOrbs, levelUp: levelUp, victory: victory, dust: dust, hurtBurst: hurtBurst,
     haloSprite: haloSprite, PRISM: PRISM,
     get scene() { return scene; }, get activeCount() { return (glow ? glow.active : 0) + (chunks ? chunks.active : 0) + transient.length; }
   };
@@ -4390,6 +4482,45 @@ var M = (function () {
       base = marker(g, 1.2); tip = marker(g, 2.42);
       glowOn(g, 2.0, 1.6);
       rest = { pos: [0.07, -0.05, 0.12], rot: [2.25, 0, -0.1] };
+    } else if (type === 'staff' && w.comet) {                // 혜성: 얼음 결정 요람에 담긴 얼음 핵 + 청록 코마 + 뒤로 흐르는 이온·먼지 꼬리
+      var silver = mat(0x9fb4cc), iceC = mat(0xbfe8ff, { emissive: 0x3a8ad8, ei: 0.6, flat: true }), band = mat(0x3a4a66);
+      var silP = [], iceP = [], bandP = [];
+      silP.push(cyl(g, 0.036, 0.046, 1.5, 7, silver, 0, 0.66, 0));                                  // 은빛 자루
+      for (var cb = 0; cb < 3; cb++) bandP.push(box(g, 0.07, 0.03, 0.07, band, 0, 0.1 + cb * 0.13, 0, 0, cb * 0.5, 0));
+      iceP.push(cone(g, 0.05, 0.2, 5, iceC, 0, -0.18, 0, Math.PI, 0, 0));                           // 얼음 물미
+      silP.push(torus(g, 0.09, 0.02, 12, silver, 0, 1.44, 0, Math.PI / 2, 0, 0));
+      for (var cr2 = 0; cr2 < 3; cr2++) {                                                           // 핵을 받치는 얼음 결정 날 3개
+        var cang = cr2 / 3 * Math.PI * 2;
+        var blade = octa(g, 0.05, iceC, Math.cos(cang) * 0.11, 1.62, Math.sin(cang) * 0.11);
+        blade.scale.set(0.8, 3.6, 0.8); blade.rotation.set(Math.sin(cang) * 0.55, 0, -Math.cos(cang) * 0.55); iceP.push(blade);
+      }
+      mergeParts(g, silP, silver); mergeParts(g, iceP, iceC); mergeParts(g, bandP, band);           // 정적 부품 11개 → 3 드로우
+      var cHead = group(g, 0, 1.8, 0);
+      var nuc = add(cHead, new THREE.Mesh(FX.geo.ice, new THREE.MeshBasicMaterial({ vertexColors: true }))); nuc.scale.setScalar(0.11);   // 먼지 섞인 얼음 핵
+      var comaI = FX.haloSprite(0xe8faff, 0.55, 0.9), comaB = FX.haloSprite(0x52c8ff, 1.3, 0.6), comaG = FX.haloSprite(0x6affd0, 2.0, 0.18);
+      cHead.add(comaI); cHead.add(comaB); cHead.add(comaG);
+      function tail(color, r, len, dir, op) {                                                       // 꼬리: 밑이 밝고 끝으로 사라지는 원기둥(공용 지오메트리)
+        var m = new THREE.Mesh(FX.geo.pillar, new THREE.MeshBasicMaterial({ color: color, vertexColors: true, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+        m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize()); m.scale.set(r, len, r); m.renderOrder = 6; cHead.add(m);
+        return m;
+      }
+      var ionT = tail(0x3a8cff, 0.05, 1.05, new THREE.Vector3(0, -0.5, -0.86), 0.7), ionC = tail(0xbfe8ff, 0.018, 0.95, new THREE.Vector3(0, -0.5, -0.86), 0.9);   // 곧은 파란 이온 꼬리
+      var dustT = tail(0xfff0d0, 0.1, 0.75, new THREE.Vector3(0.35, -0.55, -0.76), 0.28);                                                                          // 휘어진 먼지 꼬리
+      var sparks = [];
+      for (var sk = 0; sk < 4; sk++) sparks.push(octa(cHead, 0.02, basic(sk % 2 ? 0xffffff : 0x9fe0ff, { add: true, opacity: 0.95 }), 0, 0, 0));
+      base = marker(g, 0.9); tip = marker(g, 1.8);
+      ticks.push(function (t) {
+        nuc.rotation.set(t * 0.7, t * 1.1, 0);
+        comaB.material.opacity = 0.55 + Math.sin(t * 3.1) * 0.1; comaG.material.opacity = 0.16 + Math.sin(t * 1.7 + 1) * 0.06;
+        var fl = 1 + Math.sin(t * 9) * 0.06 + Math.sin(t * 23) * 0.03;                             // 태양풍에 떨리는 이온 꼬리
+        ionT.scale.y = 1.05 * fl; ionC.scale.y = 0.95 * fl; ionT.material.opacity = 0.6 + Math.sin(t * 13) * 0.1;
+        dustT.rotation.z = Math.sin(t * 1.3) * 0.06; dustT.scale.y = 0.75 * (1 + Math.sin(t * 2.1) * 0.08);
+        for (var q = 0; q < sparks.length; q++) {                                                  // 핵 둘레를 도는 얼음 결정
+          var a = t * (1.6 + q * 0.3) + q * 1.57, r = 0.2 + 0.04 * Math.sin(t * 3 + q);
+          sparks[q].position.set(Math.cos(a) * r, Math.sin(t * 2 + q * 2) * 0.08, Math.sin(a) * r); sparks[q].rotation.set(t * 3, t * 2, 0);
+        }
+      });
+      rest = { pos: [0.06, -0.02, 0.1], rot: [0.18, 0, -0.06] };
     } else if (type === 'staff' && w.blackhole) {           // 가이아 BH3: 잠든 블랙홀(태양 33배)과 그 짝별을 가둔 운철 지팡이
       var iron = mat(0x24202e, { flat: true }), gilt = mat(0xd8a84a, { emissive: 0x5a3a08, ei: 0.4 }), amber = mat(0xffb05a, { emissive: 0xff8a30, ei: 0.8 });
       var ironP = [], giltP = [], ambP = [];
@@ -4407,13 +4538,13 @@ var M = (function () {
       mergeParts(g, ironP, iron); mergeParts(g, giltP, gilt); mergeParts(g, ambP, amber);          // 정적 부품 30개 → 3 드로우
       var bhHead = group(g, 0, 1.86, 0), bhG = group(bhHead, 0, 0, 0);
       add(bhG, new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 12), basic(0x000000)));        // 사건의 지평선 (그림자)
-      var disk = add(bhG, new THREE.Mesh(FX.geo.disk, FX.diskMat({ spin: 2.2 })), 0, 0, 0, 0.42, 0, 0.18); disk.scale.setScalar(0.38); // 강착 원반
+      var disk = add(bhG, new THREE.Mesh(FX.geo.disk, FX.diskMat({ spin: 2.2 })), 0, 0, 0, 0.12); disk.scale.setScalar(0.38); // 강착 원반: 발톱 끝과 같은 높이로 수평 (살짝만 기울임)
       var lensS = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX.tex.lens, color: 0xffe2b8, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
       lensS.scale.setScalar(0.36); lensS.renderOrder = 9; bhG.add(lensS);                           // 광자 고리
       var haloA = FX.haloSprite(0xffa860, 1.4, 0.4); bhHead.add(haloA);
       var haloV = FX.haloSprite(0x8a5cff, 2.6, 0.25); bhHead.add(haloV);
-      var orbit = group(bhHead, 0, 0, 0); orbit.rotation.set(-0.55, 0.3, 0.4);                     // 짝별 궤도면 (원반과 어긋남)
-      var ecc = 0.6, oa = 0.42, ob2 = oa * Math.sqrt(1 - ecc * ecc), pts = [];
+      var orbit = group(bhHead, 0, 0, 0); orbit.rotation.set(0.3, 0, -0.22);                       // 짝별 궤도면: 원반보다 조금 더 기울어 블랙홀을 감쌈
+      var ecc = 0.22, oa = 0.4, ob2 = oa * Math.sqrt(1 - ecc * ecc), pts = [];
       for (var ep = 0; ep <= 64; ep++) { var ea = ep / 64 * Math.PI * 2; pts.push(new THREE.Vector3(oa * (Math.cos(ea) - ecc), 0, ob2 * Math.sin(ea))); }
       var orbitLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xb48cff, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
       orbit.add(orbitLine);
@@ -4684,7 +4815,8 @@ var M = (function () {
       hand: hand, handL: handL, cape: [c1, c2, c3], capeRoot: capeRoot, shadow: shadow,
       pauL: pauL, pauR: pauR, eyeL: eyeL, eyeR: eyeR,
       equip: equip, getWeapon: function () { return weapon; }, getSword: function () { return weapon; },
-      weapons: function () { return Object.keys(wcache).map(function (k) { return wcache[k]; }); }
+      weapons: function () { return Object.keys(wcache).map(function (k) { return wcache[k]; }); },
+      preload: function (id) { return wcache[id] || (wcache[id] = buildWeapon(id)); }          // 장착하지 않고 만들어만 둔다 (셰이더 예열용)
     };
   }
   // ---- 몬스터: 테마별 빌더 ----
@@ -5117,7 +5249,7 @@ var M = (function () {
         flame2.scale.y = 1 + Math.sin(t * 12 + 1) * 0.3; flame2.rotation.y = -t * 3;
         flame3.scale.y = 1 + Math.sin(t * 15 + 2) * 0.35;
         fireHalo.material.opacity = 0.42 + Math.sin(t * 8.2) * 0.1 + Math.sin(t * 13.7) * 0.05;
-        fireLight.intensity = 2.0 + Math.sin(t * 8.2) * 0.35 + Math.sin(t * 13.7) * 0.18;
+        fireLight.intensity = fireLight.userData.off ? 0 : 2.0 + Math.sin(t * 8.2) * 0.35 + Math.sin(t * 13.7) * 0.18;
         for (var i = 0; i < emberN; i++) {
           var d = emberData[i];
           d.t += 0.016 * d.sp * 2.2;
@@ -6478,7 +6610,8 @@ var Game = (function () {
     return Math.max(Math.min(floor, dpr), Math.min(dpr, Q.pixel, Math.sqrt(budget / area)));
   }
   function applyLobbyQuality() { // 낮음: 로비 모닥불 점광원 끔 (후광 스프라이트가 대신 빛을 표현)
-    if (lobbyEnv && lobbyEnv.fireLight) lobbyEnv.fireLight.visible = Q.name !== 'low';
+    // 최적화: 조명을 숨기면(visible) 조명 개수가 바뀌어 모든 셰이더를 다시 컴파일(자동 품질 저하 순간 큰 끊김) → 밝기만 0 으로
+    if (lobbyEnv && lobbyEnv.fireLight) lobbyEnv.fireLight.userData.off = Q.name === 'low';
   }
   // gl_PointSize 는 화면 버퍼 픽셀 단위 → CSS 높이 × 픽셀 비율로 맞춰야 고해상도 화면에서도 크기가 같다
   function applyPointScale() {
@@ -6492,6 +6625,8 @@ var Game = (function () {
     save = loadSave(storage);
     touchMode = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     renderer = new THREE.WebGLRenderer({ antialias: !touchMode, powerPreference: 'high-performance' });
+    // 최적화: 셰이더 오류 검사(getProgramInfoLog 등 동기 호출)는 컴파일마다 GPU 를 기다리게 해 입장·예열을 직렬로 만든다 → #debug 일 때만 (three.js 문서 권장)
+    renderer.debug.checkShaderErrors = /debug/.test(location.hash);
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
     window.__renderer = renderer; // 진단용 (메모리/프로그램 수 확인)
@@ -6529,6 +6664,22 @@ var Game = (function () {
     onResize();
     setState('start');                        // 여기서 이펙트 풀이 로비 씬에 들어감
     try { renderer.compile(sceneLobby, camera); } catch (e) { }
+    setTimeout(prewarmLobby, 60);             // 첫 화면이 그려진 뒤 (시작 화면에서) 예열
+  }
+  // 최적화: 무기고 미리보기의 첫 휘두르기마다 셰이더를 컴파일하느라 0.2~0.5초 멈추던 문제 →
+  // 시작 화면에서 모든 무기 모델 + 모든 이펙트를 로비 조명·안개 조건으로 한 번에 미리 컴파일
+  function prewarmLobby() {
+    if (state !== 'start' || FX.scene !== sceneLobby) return;       // 이미 다른 화면이면 건너뜀 (진행 중인 이펙트를 지우지 않도록)
+    var tmp = new THREE.Group(); tmp.position.set(0, -80, 0);
+    WEAPONS.forEach(function (w) {
+      var wp = lobbyHero.preload(w.id);
+      if (!wp.g.parent) tmp.add(wp.g);
+      if (wp.off && !wp.off.parent) tmp.add(wp.off);
+    });
+    sceneLobby.add(tmp);
+    FX.prewarm(renderer, camera);
+    while (tmp.children.length) tmp.remove(tmp.children[0]);
+    sceneLobby.remove(tmp);
   }
   function onResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -6660,7 +6811,7 @@ var Game = (function () {
 
     var hero = M.buildHero();
     var weapon = hero.equip(save.equipped);
-    if ((weapon.el === 'nova' || weapon.bh) && SFX.warmNova) SFX.warmNova();   // 궁극기 잔향·왜곡 곡선을 입장 때 미리 만들어 둔다 (발동 순간 끊김 방지)
+    if (SFX.warmNova) SFX.warmNova();   // 잔향·왜곡 곡선을 입장 때 미리 만들어 둔다 (운석·초신성·블랙홀·혜성 첫 발동 끊김 방지. 생성은 이제 수 ms)
     var trail = new FX.Trail(28, 0.19);
     trail.setColors(weapon.E.c1, weapon.E.c2, weapon.prism);
     sceneDungeon.add(trail.mesh);
@@ -7009,6 +7160,8 @@ var Game = (function () {
   }
   function atkOf(wp) { return wp.def.blackhole ? ATTACKS.blackhole : (ATTACKS[wp.type] || ATTACKS.sword); }  // 무기별 공격 안무 (가이아 BH3 는 전용)
   function sndOf(wp) { return wp.def.blackhole ? 'blackhole' : wp.type; }                                    // 휘두름·발사 소리 키
+  function mkind(wp) { return wp.def.comet ? 'comet' : 'fire'; }                                              // 운석 팔레트 (용의 숨결 / 혜성)
+  function summonSfx(wp) { if (wp.def.comet) SFX.cometCall(); else SFX.meteorSummon(); }                     // 부르는 소리 (용의 포효 / 얼음 종소리)
   function easeOutBack(k) { var c = 1.7; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); }
   function easeInOut(k) { return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; }
 
@@ -7044,13 +7197,13 @@ var Game = (function () {
     var dir = new THREE.Vector3(mo.g.position.x - run.player.x, 0, mo.g.position.z - run.player.z);
     if (dir.lengthSq() < 1e-6) dir.set(0, 0, -1);
     dir.normalize();
-    if (meteorW) FX.meteorImpact(hitPos, { ground: ground, power: pw });
+    if (meteorW) FX.meteorImpact(hitPos, { ground: ground, power: pw, kind: mkind(w) });
     else if (bhW) { var hole = mo.bhHole || hitPos; FX.bhCollapse(hole, { ground: new THREE.Vector3(hole.x, 0, hole.z), power: pw }); mo.bhHole = null; }   // 특이점 붕괴 → 제트
     else FX.impact(w.el, hitPos, { dir: dir, ground: ground, power: pw, radius: 0.75 * mo.scale, prism: w.prism });
     FX.debris(hitPos, [run.d.accent, 0xffffff], big ? 7 : 4, dir);
     hitSpark(hitPos, w.E, big);
     FX.flash(hitPos, w.E.glow, big ? 3.4 : 2.3, 0.22);          // (높음 품질) 벽을 속성색으로 물들이는 섬광
-    if (meteorW) SFX.meteorImpact(screenPan(hitPos), true); else if (bhW) SFX.bhCollapse(screenPan(hitPos), dead); else SFX.impact(w.el, heavy);
+    if (meteorW) { SFX.meteorImpact(screenPan(hitPos), true); if (w.def.comet) SFX.cometShatter(screenPan(hitPos), false); } else if (bhW) SFX.bhCollapse(screenPan(hitPos), dead); else SFX.impact(w.el, heavy);
     SFX.thump(big);
     mo.flash = 1;
     hitStop = dead ? 0.1 : heavy ? 0.085 : 0.06;
@@ -7260,9 +7413,10 @@ var Game = (function () {
       if (lobbyWeapon.def.meteor && !lobbyNova.meteor && k >= def.release) {
         lobbyNova.meteor = true;
         var tg = lobbyTarget(h);
-        FX.meteorCall(lobbyWeapon.tip.getWorldPosition(new THREE.Vector3())); SFX.meteorSummon(); SFX.meteorFall(0.5, 0);
-        FX.meteor(meteorSky(tg, 0.25), tg, { dur: 0.5, size: 0.85,
-          onArrive: function (p) { FX.meteorImpact(p, { ground: new THREE.Vector3(p.x, 0, p.z), power: 0.8, lite: true }); SFX.meteorImpact(0, false); } });
+        var lk = mkind(lobbyWeapon);
+        FX.meteorCall(lobbyWeapon.tip.getWorldPosition(new THREE.Vector3()), lk); summonSfx(lobbyWeapon); SFX.meteorFall(0.5, 0);
+        FX.meteor(meteorSky(tg, 0.25), tg, { dur: 0.5, size: 0.85, kind: lk,
+          onArrive: function (p) { FX.meteorImpact(p, { ground: new THREE.Vector3(p.x, 0, p.z), power: 0.8, lite: true, kind: lk }); SFX.meteorImpact(0, false); if (lk === 'comet') SFX.cometShatter(0, false); } });
       }
       if (lobbyWeapon.type === 'axe') h.g.rotation.y = Math.PI + (k > 0.3 && k < 0.58 ? (k - 0.3) / 0.28 * Math.PI * 2 : (k >= 0.58 ? Math.PI * 2 : 0));
       var tr = def.trail || [0.2, 0.5];
@@ -7533,8 +7687,8 @@ var Game = (function () {
       if (bh) { FX.bhLaunch(from, TMP3.copy(to).sub(from).normalize()); addShake(0.35); kickCamera(TMP3.setY(0).normalize(), 0.4, false); }
       if (run.weapon.def.meteor) {                             // 용의 숨결: 지팡이가 하늘을 부르면 운석이 떨어진다
         var sky = meteorSky(to, (Math.random() - 0.5) * 0.5), mpan = screenPan(to);
-        FX.meteorCall(from); SFX.meteorSummon(); SFX.meteorFall(0.5, mpan);
-        FX.meteor(sky, to, { dur: 0.5, onBreak: function () { SFX.meteorBreak(mpan); }, onArrive: function () { if (run && mo && mo.plan.alive) doHit(mo); } });
+        FX.meteorCall(from, mkind(run.weapon)); summonSfx(run.weapon); SFX.meteorFall(0.5, mpan);
+        FX.meteor(sky, to, { dur: 0.5, kind: mkind(run.weapon), onBreak: function () { SFX.meteorBreak(mpan); }, onArrive: function () { if (run && mo && mo.plan.alive) doHit(mo); } });
       } else FX.projectile(from, to, {
         el: a.el, kind: a.type === 'bow' ? 'arrow' : nova ? 'nova' : bh ? 'blackhole' : (a.el === 'fire' ? 'fireball' : 'orb'),
         dur: travel, arc: a.type === 'bow' ? 0.15 : bh ? 0.35 : 0.3, prism: a.prism,
@@ -7575,6 +7729,11 @@ var Game = (function () {
       var dist = 5.7 + 5.2 * pullN;
       camTarget = TMP.set(p.x + Math.sin(yaw) * dist, 8.3 + 4.4 * pullN, p.z + Math.cos(yaw) * dist);
       lookTarget = TMP2.set(p.x, 0.9 + 3.6 * sky, p.z);
+    } else if (ult && ult.comet) {               // 혜성 충돌: 뒤로 크게 빠져 떨어질 자리와 하늘을 함께 담고, 충돌 뒤 충격파를 내려다봄
+      var tcm = ult.t, pcm = Math.min(1, tcm / 0.5) * Math.min(1, Math.max(0, (ult.endAt - tcm) / 0.7));
+      var mxc = (p.x + ult.gnd.x) / 2, mzc = (p.z + ult.gnd.z) / 2, skyc = tcm < ult.hitT ? Math.min(1, tcm / 0.6) : Math.max(0, 1 - (tcm - ult.hitT) / 0.5);
+      camTarget = TMP.set(mxc, 8.3 + 4.2 * pcm, mzc + 5.7 + 4.2 * pcm);
+      lookTarget = TMP2.set(mxc, 0.9 + 1.6 * skyc, mzc);
     } else if (ult && ult.bh) {                  // 사건의 지평선: 하늘의 블랙홀을 올려다보며 선회 → 붕괴 뒤 전장을 내려다봄
       var tb = ult.t, pb = Math.min(1, tb / 0.6) * Math.min(1, Math.max(0, (ult.endAt - tb) / 0.7));
       var skyb = tb < ult.collapseAt + 0.2 ? Math.min(1, tb / 0.55) : Math.max(0, 1 - (tb - ult.collapseAt - 0.2) / 0.6);
@@ -7702,6 +7861,7 @@ var Game = (function () {
     SFX.musicDuck(true);                                      // 연출 동안 배경음악을 낮춘다
     if (w.el === 'nova') { startNovaUlt(targets, immune); return; }
     if (w.bh) { startBHUlt(targets, immune); return; }
+    if (w.def.comet) { startCometUlt(targets, immune); return; }
     var hitAt = targets.map(function (m, i) { return 0.8 + i * 0.1; });
     ult = { t: 0, targets: targets, immune: immune, hitAt: hitAt, struck: 0, slammed: false, el: w.el, E: E,
       name: w.def.ultName || ULT_NAMES[w.el] || '궁극기', lv0: levelFromExp(save.exp).level, endAt: 0.8 + targets.length * 0.1 + 0.8,
@@ -7842,6 +8002,82 @@ var Game = (function () {
     if (ult && i === ult.targets.length - 1) slowMo = 0.3;
     ultKill(mo);
   }
+  // ---------- 혜성 전용 궁극기: 하나의 거대한 혜성 ----------
+  // 타임라인(게임 시간): 0~0.5 지팡이를 치켜들어 하늘에 신호 → 0.5~2.0 화면 위 끝에서 거대 혜성이 코마·꼬리를 끌며 낙하 (그림자가 커지고 땅이 흔들림)
+  //                   → 2.0 충돌: 섬광·청백 불덩이·얼음 가시·증기 기둥 → 충격파가 퍼지며 닿는 대상부터 차례로 처치
+  var COMET_ULT = { call: 0.5, fall: 1.5, wave: 13 };
+  function startCometUlt(targets, immune) {
+    var p = run.player, w = run.weapon, C = COMET_ULT, cx = p.x, cz = p.z;
+    if (targets.length) {                                    // 떨어질 자리: 대상들의 가운데
+      cx = 0; cz = 0;
+      targets.forEach(function (m) { cx += m.g.position.x; cz += m.g.position.z; });
+      cx /= targets.length; cz /= targets.length;
+    }
+    var dx = cx - p.x, dz = cz - p.z, d = Math.hypot(dx, dz);
+    if (d < 2.4) {                                           // 주인공 머리 위로 떨어지지 않게 대상 쪽(없으면 화면 안쪽)으로 밀어냄
+      if (d < 0.3) { var cf = TMP2.set(0, 0, -1).applyQuaternion(camera.quaternion); dx = cf.x; dz = cf.z; d = Math.hypot(dx, dz) || 1; }
+      cx = p.x + dx / d * 2.4; cz = p.z + dz / d * 2.4;
+    }
+    var hitT = C.call + C.fall, gnd = new THREE.Vector3(cx, 0, cz);
+    var order = targets.map(function (m) { return { m: m, at: hitT + 0.06 + Math.hypot(m.g.position.x - cx, m.g.position.z - cz) / C.wave }; })
+      .sort(function (a, b) { return a.at - b.at; });                // 충격파가 먼저 닿는 순서
+    var last = order.length ? order[order.length - 1].at : hitT;
+    ult = { t: 0, comet: true, targets: order.map(function (x) { return x.m; }), hitAt: order.map(function (x) { return x.at; }), immune: immune, struck: 0,
+      el: w.el, E: w.E, pending: targets.slice(), gnd: gnd, hitT: hitT, name: w.def.ultName || ULT_NAMES[w.el], lv0: levelFromExp(save.exp).level,
+      endAt: Math.max(hitT + 1.5, last + 0.8) };
+    setState('dungeon');
+    UI.ultCast(true, ult.name, true);
+    SFX.ultCharge(); SFX.cometCall(); buzz([15, 40, 15]);
+    FX.decal(FX.tex.rune, 0x6ec8ff, gnd, 4.4, ult.endAt, { grow: true, growSpeed: 1.6, spin: 0.8, hold: 0.8, rot: 0, opacity: 0.85 });   // 떨어질 자리의 마법진
+    FX.meteorCall(w.tip.getWorldPosition(new THREE.Vector3()), 'comet');
+  }
+  function updateCometUlt() {
+    var u = ult, h = run.hero, t = u.t, C = COMET_ULT;
+    // 주인공: 지팡이를 치켜들어 혜성을 부름 → 충돌 순간 몸을 낮춰 버팀 → 마무리
+    var lift = Math.min(1, t / 0.35), back = t > u.endAt - 0.5 ? Math.min(1, (t - (u.endAt - 0.5)) / 0.4) : 0;
+    var brace = t > u.hitT ? Math.min(1, (t - u.hitT) / 0.12) * Math.max(0, 1 - (t - u.hitT - 0.3) / 0.5) : 0;
+    h.armR.rotation.x = lerp(lerp(-0.25, -2.9, lift), -0.25, back); h.armL.rotation.x = lerp(lerp(0, -2.2, lift), 0, back);
+    h.armR.rotation.z = -0.15 * lift * (1 - back);
+    h.g.position.y = t < u.hitT ? 0.08 * lift : -0.12 * brace;
+    h.body.rotation.x = 0.2 * brace;
+    for (var ci = 0; ci < h.cape.length; ci++) h.cape[ci].rotation.x = 0.6 + Math.sin(t * 10 - ci) * 0.22 + brace * 0.6;
+    if (!u.launched && t >= C.call) {                        // 화면 위 끝에서 거대 혜성 출발
+      u.launched = true;
+      var to = new THREE.Vector3(u.gnd.x, 0.8, u.gnd.z);
+      FX.meteor(meteorSky(to, 0.35), to, { kind: 'comet', giant: true, size: 4.2, dur: C.fall });
+      SFX.meteorFall(C.fall, screenPan(to));
+    }
+    if (u.launched && !u.hit) addShake(0.05 + 0.25 * clamp01((t - C.call) / C.fall));   // 다가올수록 땅이 흔들림
+    if (!u.slowed && t > u.hitT - 0.1) { u.slowed = true; slowMo = 0.4; }            // 충돌 직전 시간이 느려진다
+    if (!u.hit && t >= u.hitT) { u.hit = true; cometUltImpact(); }
+    while (u.struck < u.targets.length && t >= u.hitAt[u.struck]) { cometWaveHit(u.targets[u.struck], u.struck); u.struck++; }
+    if (t >= u.endAt) finishUlt();
+  }
+  function cometUltImpact() {
+    var u = ult, g = u.gnd, pan = screenPan(g);
+    FX.cometCrash(new THREE.Vector3(g.x, 0.8, g.z), { ground: g, R: BAL.ult.radius });
+    UI.screenFlash('#ffffff', 0.85);
+    SFX.meteorImpact(pan, true); SFX.ultBoom(); SFX.cometShatter(pan, true);
+    buzz([40, 30, 90]); hitStop = 0.2; addShake(1.6);
+    kickCamera(TMP2.set(0, 0.3, 1).normalize(), 1.5, true);
+    ultImmune(u);
+  }
+  function cometWaveHit(mo, i) {                             // 충격파가 닿은 대상: 얼음 가시에 꿰뚫리며 튕겨 나감
+    if (!run || !mo.plan.alive) return;
+    var u = ult, k = u.pending.indexOf(mo);
+    if (k >= 0) u.pending.splice(k, 1);
+    var gp = new THREE.Vector3(mo.g.position.x, 0, mo.g.position.z), hp = new THREE.Vector3(mo.g.position.x, mo.h * 0.55, mo.g.position.z);
+    var dir = new THREE.Vector3(mo.g.position.x - u.gnd.x, 0, mo.g.position.z - u.gnd.z);
+    if (dir.lengthSq() < 1e-4) dir.set(0, 0, 1);
+    dir.normalize();
+    FX.impact('ice', hp, { dir: dir, ground: gp, power: i < 4 ? 1.3 : 1, radius: 0.75 * mo.scale });
+    hitSpark(hp, run.weapon.E, true);
+    if (i < 5) SFX.impact('ice', i < 2);
+    mo.flash = 1; reactMonster(mo, dir, 1.6);
+    addShake(0.3); buzz(12);
+    if (i === u.targets.length - 1) slowMo = 0.3;
+    ultKill(mo);
+  }
   // ---------- 가이아 BH3 전용 궁극기: 사건의 지평선 ----------
   // 타임라인(게임 시간): 0~0.45 특이점이 지팡이를 떠나 하늘로 → ~0.95 지평선이 열림 → 1.0~ 대상마다(0.09초 간격) 조석력에 늘어나며 0.7초 동안 끌려가 삼켜짐
   //                   → 마지막을 삼킨 0.3초 뒤 붕괴: 처프 → 상대론적 제트 + 중력파 → 지팡이에 새 특이점이 맺힘
@@ -7946,6 +8182,7 @@ var Game = (function () {
     u.t += dt;
     if (u.nova) { updateNovaUlt(); return; }
     if (u.bh) { updateBHUlt(); return; }
+    if (u.comet) { updateCometUlt(); return; }
     var t = u.t;
     if (t < 0.62) {                               // 회전하며 도약, 무기를 치켜듦
       var k = t / 0.62, e = 1 - (1 - k) * (1 - k);
