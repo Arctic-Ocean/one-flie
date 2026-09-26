@@ -497,6 +497,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
   .btn-start::after { animation: none; }
   .bar.hp.low i { animation: none; }
   #banner.on { animation-duration: 1.2s; }
+  .g-glitch::before, .g-glitch::after { display: none; }
+  #ult-grade.g-sss .g-rank { animation: gStamp .5s ease-out both; }
 }
 
 /* ---------- 타격감: 데미지 숫자 · 체력 잔상 · 패널 피격 ---------- */
@@ -559,6 +561,59 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
 #ult-overlay.deep { background: radial-gradient(ellipse at 50% 38%, rgba(8,12,40,0.18) 12%, rgba(2,3,14,0.84) 100%); transition: opacity .5s; }
 #banner.ult { color: #fff4c8; letter-spacing: 6px; text-shadow: 0 4px 0 #6e4e0a, 0 0 36px rgba(255,200,80,0.9); }
 .r-ult { font-weight: 900; }
+/* 블루스크린 (치명적 오류 궁극기): 가로 띠로 켜졌다가, 찢어지며 사라짐 */
+#bsod { position: fixed; inset: 0; z-index: 28; pointer-events: none; display: none; overflow: hidden; background: #1060d8; color: #fff;
+  padding: 14vh 11vw 0; font-family: "Segoe UI", "Malgun Gothic", system-ui, sans-serif; }
+#bsod.on { display: block; animation: bsodIn .18s steps(3) both; }
+#bsod.on.out { animation: bsodOut .3s steps(6) forwards; }
+#bsod::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0 2px, transparent 2px 4px); }
+.bs-face { font-size: clamp(72px, 15vw, 150px); line-height: 1; margin-bottom: 4vh; }
+.bs-msg { font-size: clamp(17px, 3vw, 28px); line-height: 1.5; max-width: 780px; word-break: keep-all; }
+.bs-pct { margin-top: 3.5vh; font-size: clamp(17px, 3vw, 28px); }
+.bs-code { margin-top: 5vh; font-size: clamp(12px, 1.8vw, 16px); opacity: .85; line-height: 1.6; }
+@keyframes bsodIn { 0% { clip-path: inset(45% 0 45% 0); } 50% { clip-path: inset(10% 0 30% 0); transform: translateX(3%); } 100% { clip-path: inset(0); transform: none; } }
+@keyframes bsodOut {
+  0% { clip-path: inset(0); }
+  20% { clip-path: inset(8% 0 52% 0); transform: translateX(-7%); }
+  40% { clip-path: inset(58% 0 10% 0); transform: translateX(9%); filter: hue-rotate(80deg); }
+  60% { clip-path: inset(28% 0 44% 0); transform: translateX(-13%); }
+  80% { clip-path: inset(78% 0 4% 0); transform: translateX(15%); filter: hue-rotate(200deg); }
+  100% { clip-path: inset(50% 0 50% 0); opacity: 0; }
+}
+/* 궁극기 평가: 도장처럼 찍히는 랭크 + 가로 조각이 어긋나는 글리치 글자(::before/::after 에 같은 글자를 색만 바꿔 겹침) + 회전하는 빛살 */
+#ult-grade { position: fixed; left: 50%; top: 40%; z-index: 29; pointer-events: none; display: none; text-align: center; transform: translate(-50%, -50%);
+  white-space: nowrap; --gc: #ff2bd6; --gr: rgba(255,43,214,0.18); }
+#ult-grade.on { display: block; }
+#ult-grade.on.off { animation: gOut .4s steps(5) forwards; }
+.g-rays { position: absolute; left: 50%; top: 40%; width: 150vmin; height: 150vmin; margin: -75vmin 0 0 -75vmin; z-index: -1; opacity: 0;
+  background: repeating-conic-gradient(var(--gr) 0deg 7deg, transparent 7deg 20deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 62%); mask: radial-gradient(circle, #000 18%, transparent 62%); }
+#ult-grade.on .g-rays { animation: gRays 2.4s linear both; }
+.g-glitch { position: relative; }
+.g-glitch::before, .g-glitch::after { content: attr(data-t); position: absolute; left: 0; top: 0; width: 100%; height: 100%; text-shadow: none; opacity: .85; mix-blend-mode: screen; }
+.g-glitch::before { color: #ff2050; transform: translateX(-4px); animation: gSliceA 1.1s steps(9) infinite; }
+.g-glitch::after { color: #20fff0; transform: translateX(4px); animation: gSliceB .9s steps(7) infinite; }
+.g-rank { font: 900 clamp(96px, 24vw, 220px)/0.95 "Arial Black", Impact, system-ui, sans-serif; color: var(--gc); letter-spacing: -2px;
+  text-shadow: 0 0 28px var(--gc), 0 6px 0 rgba(0,0,0,0.55); }
+#ult-grade.on .g-rank { animation: gStamp .5s cubic-bezier(.2,1.6,.4,1) both; }
+#ult-grade.g-sss .g-rank { animation: gStamp .5s cubic-bezier(.2,1.6,.4,1) both, gRain .8s steps(8) infinite; }
+.g-title { font: 900 clamp(22px, 5.4vw, 46px)/1.15 ui-monospace, Consolas, monospace; color: #fff; letter-spacing: 4px; margin-top: 6px;
+  text-shadow: 0 0 18px var(--gc), 0 3px 0 rgba(0,0,0,.6); }
+#ult-grade.on .g-title { animation: gType .45s steps(6) .18s both; }
+.g-sub { margin-top: 10px; font: 800 clamp(14px, 3vw, 20px)/1.3 system-ui, sans-serif; color: #e8f6ff; text-shadow: 0 2px 4px #000; }
+#ult-grade.on .g-sub { animation: gFade .3s ease-out .5s both; }
+#ult-grade.g-sss { --gc: #ff2bd6; --gr: rgba(255,80,230,0.22); }
+#ult-grade.g-a { --gc: #ff5a3a; --gr: rgba(255,90,58,0.16); }
+#ult-grade.g-b { --gc: #ffd23e; --gr: rgba(255,210,62,0.14); }
+#ult-grade.g-n { --gc: #8aa0c8; --gr: rgba(138,160,200,0.1); }
+@keyframes gSliceA { 0% { clip-path: inset(10% 0 78% 0); } 20% { clip-path: inset(62% 0 20% 0); } 40% { clip-path: inset(30% 0 52% 0); } 60% { clip-path: inset(84% 0 4% 0); } 80% { clip-path: inset(4% 0 90% 0); } 100% { clip-path: inset(48% 0 38% 0); } }
+@keyframes gSliceB { 0% { clip-path: inset(70% 0 12% 0); } 25% { clip-path: inset(18% 0 70% 0); } 50% { clip-path: inset(44% 0 40% 0); } 75% { clip-path: inset(2% 0 86% 0); } 100% { clip-path: inset(88% 0 2% 0); } }
+@keyframes gStamp { 0% { opacity: 0; transform: scale(3.2) rotate(-14deg); filter: blur(6px); } 55% { opacity: 1; transform: scale(.9) rotate(3deg); filter: blur(0); } 75% { transform: scale(1.06) rotate(-2deg); } 100% { opacity: 1; transform: none; } }
+@keyframes gRain { 0%, 100% { color: #ff2bd6; } 25% { color: #ffd23e; } 50% { color: #2bffe0; } 75% { color: #b6ff3a; } }
+@keyframes gType { 0% { opacity: 0; clip-path: inset(0 100% 0 0); } 100% { opacity: 1; clip-path: inset(0); } }
+@keyframes gFade { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: none; } }
+@keyframes gRays { 0% { opacity: 0; transform: rotate(0deg) scale(.4); } 12% { opacity: 1; transform: rotate(12deg) scale(1); } 100% { opacity: .7; transform: rotate(70deg) scale(1.06); } }
+@keyframes gOut { 0% { opacity: 1; clip-path: inset(0); } 40% { clip-path: inset(20% 0 30% 0); transform: translate(-47%, -50%); } 100% { opacity: 0; clip-path: inset(50% 0 50% 0); transform: translate(-53%, -50%); } }
 .result-note.ult { color: #ffe08a; }
 @media (max-width: 560px) {
   #ult-btn { width: 74px; height: 74px; right: 12px; }
@@ -1059,7 +1114,7 @@ BAL.ult = { max: 100, gain: 20, comboGain: 25, comboAt: 3, radius: 7.5 };
 var ULT_NAMES = {
   steel: '강철 폭풍', gold: '황금 심판', ice: '절대 영도', fire: '홍련 폭발', arcane: '비전 붕괴', poison: '맹독 역병',
   wind: '천공 질풍', thunder: '뇌신 강림', nature: '숲의 분노', moon: '월광 난무', earth: '대지 붕괴', shadow: '암흑 강림',
-  holy: '신성 심판', star: '유성 낙하', nova: 'Ia형 초신성', blackhole: '사건의 지평선', comet: '혜성 충돌'
+  holy: '신성 심판', star: '유성 낙하', nova: 'Ia형 초신성', blackhole: '사건의 지평선', comet: '혜성 충돌', error: '블루스크린'
 };
 
 // 콤보(연속 정답)에 따른 처치 보너스 골드
@@ -1121,7 +1176,8 @@ var ELEMENTS = {
   star:    { name: '별빛', c1: 0xffffff, c2: 0x7aa8ff, glow: 0xa8c4ff },
   nova:    { name: '초신성', c1: 0xffffff, c2: 0x6fb6ff, glow: 0xffa8dc },
   blackhole: { name: '블랙홀', c1: 0xffe2b0, c2: 0x8a5cff, glow: 0xffa860 },
-  comet:   { name: '혜성', c1: 0xf0fbff, c2: 0x4aa8ff, glow: 0x6ec8ff }
+  comet:   { name: '혜성', c1: 0xf0fbff, c2: 0x4aa8ff, glow: 0x6ec8ff },
+  error:   { name: '오류', c1: 0xffffff, c2: 0xff2bd6, glow: 0x2bffe0 }
 };
 // id 0~5 는 기존 저장 데이터와 호환되도록 그대로 유지. 새 무기는 6번부터.
 var WEAPONS = [
@@ -1145,7 +1201,8 @@ var WEAPONS = [
   { id: 17, name: '용의 숨결',       type: 'staff',      el: 'fire',    stars: 6, price: 5000, desc: '용의 심장이 박힌 지팡이. 하늘을 불러 불타는 운석을 떨어뜨린다.', meteor: true, move: '운석 낙하', ultName: '메테오' },
   { id: 18, name: '초신성',         type: 'scepter',    el: 'nova',    stars: 7, price: 7000, desc: '죽어가는 별의 심장을 가둔 홀. 별핵이 붕괴했다가 적 앞에서 초신성으로 폭발한다.' },
   { id: 19, name: '가이아 BH3',     type: 'staff',      el: 'blackhole', stars: 8, price: 9000, desc: '태양 33배, 우리 은하에서 가장 무거운 잠든 블랙홀을 깨운 지팡이. 적을 국수처럼 늘여 삼키고 제트를 뿜는다.', blackhole: true, move: '특이점 사출 → 조석 붕괴', ultName: '사건의 지평선' },
-  { id: 20, name: '혜성',           type: 'staff',      el: 'comet',   stars: 7, price: 8000, desc: '얼음 핵에 푸른 이온 꼬리를 단 혜성을 불러내는 지팡이. 청록 코마를 두른 채 떨어져 얼음과 증기를 흩뿌린다.', meteor: true, comet: true, move: '혜성 낙하', ultName: '혜성 충돌' }
+  { id: 20, name: '혜성',           type: 'staff',      el: 'comet',   stars: 7, price: 8000, desc: '얼음 핵에 푸른 이온 꼬리를 단 혜성을 불러내는 지팡이. 청록 코마를 두른 채 떨어져 얼음과 증기를 흩뿌린다.', meteor: true, comet: true, move: '혜성 낙하', ultName: '혜성 충돌' },
+  { id: 21, name: '치명적 오류',     type: 'katana',     el: 'error',   stars: 9, price: 10404, desc: '텍스처를 잃고 깨져 버린 칼. 쥐기만 해도 화면과 배경음이 오류를 일으키고, 벤 자리엔 픽셀 조각과 에러 창이 튄다.', glitch: true, move: '글리치 일섬', ultName: '블루스크린' }
 ];
 function weaponById(id) { return WEAPONS[id] || WEAPONS[0]; }
 // 상점 진열 순서: 가격 오름차순
@@ -1490,7 +1547,8 @@ var SFX = (function () {
     staff: function () { tone(280, 880, 0.4, 'sine', 0.06, 0, { vib: 9, vibDepth: 18, attack: 0.12 }); noise(0.4, 0.04, 0, 'highpass', 3000, 6000, 0.7, 0.2); },
     bow: function () { tone(140, 210, 0.3, 'sawtooth', 0.025, 0, { attack: 0.1 }); },
     scepter: function () { tone(620, 70, 0.55, 'sawtooth', 0.035, 0, { attack: 0.3 }); noise(0.55, 0.06, 0, 'bandpass', 5200, 380, 1.4, 0.35); },   // 별핵 붕괴: 빨려 들어가는 소리
-    blackhole: function () { tone(95, 52, 0.5, 'sine', 0.12, 0, { attack: 0.22 }); noise(0.5, 0.07, 0, 'bandpass', 2600, 280, 1.3, 0.35); }       // 공간이 한쪽으로 쏠리는 저음
+    blackhole: function () { tone(95, 52, 0.5, 'sine', 0.12, 0, { attack: 0.22 }); noise(0.5, 0.07, 0, 'bandpass', 2600, 280, 1.3, 0.35); },      // 공간이 한쪽으로 쏠리는 저음
+    glitch: function () { for (var i = 0; i < 4; i++) tone(500 + Math.random() * 2600, 0, 0.032, 'square', 0.035, i * 0.028); noise(0.13, 0.14, 0, 'bandpass', 1800, 5200, 2.2, 0.02); }   // 데이터가 새는 삑삑 + 칼바람
   };
   // 발사(원거리)
   var RELEASE = {
@@ -1502,6 +1560,7 @@ var SFX = (function () {
   // ---- 속성별 타격음 (heavy: 0~1 묵직함) ----
   var IMPACT = {
     blackhole: function () { bhCollapse(0, true); },
+    error: function () { tone(880, 0, 0.06, 'square', 0.05); tone(440, 0, 0.11, 'square', 0.05, 0.065); for (var i = 0; i < 4; i++) noise(0.022, 0.13, i * 0.042, 'bandpass', 1200 + i * 800, 0, 1.4); tone(130, 40, 0.24, 'sawtooth', 0.08); },   // 오류 삑–삑 + 끊기는 치직 + 깨지는 저음
     nova: function () { tone(72, 24, 1.1, 'sine', 0.5); noise(0.9, 0.26, 0, 'lowpass', 2600, 90, 0.7, 0.003); [1320, 1760, 2217, 2637].forEach(function (f, j) { tone(f, f * 0.985, 0.9, 'sine', 0.028, 0.07 + j * 0.05, { vib: 7, vibDepth: 6 }); }); },
     steel: function () { tone(1240, 1180, 0.16, 'square', 0.05); tone(1835, 1790, 0.12, 'triangle', 0.05); noise(0.09, 0.12, 0, 'highpass', 2500); },
     gold: function () { tone(1320, 1300, 0.18, 'triangle', 0.06); chord([1568, 2093, 2637, 3136], 0.2, 'sine', 0.045, 0.03, 0.045); noise(0.08, 0.08, 0, 'highpass', 4000); },
@@ -1535,15 +1594,15 @@ var SFX = (function () {
     g.connect(musicBus); g.connect(delayIn);
     o1.start(t); o2.start(t); o1.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
   }
-  function startDrone(root) {
+  function startDrone(root, style) {
     stopDrone();
-    var c = ac, t = c.currentTime;
-    var g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05, t + 3);
-    var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 210; lp.Q.value = 0.6;
-    var lfo = c.createOscillator(), lg = c.createGain(); lfo.frequency.value = 0.07; lg.gain.value = 70;
+    var c = ac, t = c.currentTime, gl = style === 'glitch';               // 에러: 전원 험처럼 웅웅대는 사각파 (필터가 빠르게 흔들림)
+    var g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gl ? 0.03 : 0.05, t + (gl ? 1 : 3));
+    var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = gl ? 260 : 210; lp.Q.value = gl ? 4 : 0.6;
+    var lfo = c.createOscillator(), lg = c.createGain(); lfo.frequency.value = gl ? 3.1 : 0.07; lg.gain.value = gl ? 120 : 70;
     lfo.connect(lg); lg.connect(lp.frequency);
-    var oscs = [root / 2, root / 2 * 1.006, root * 0.75].map(function (f) {
-      var o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.connect(lp); o.start(t); return o;
+    var oscs = (gl ? [root / 4, root / 4 * 1.012] : [root / 2, root / 2 * 1.006, root * 0.75]).map(function (f) {
+      var o = c.createOscillator(); o.type = gl ? 'square' : 'sawtooth'; o.frequency.value = f; o.connect(lp); o.start(t); return o;
     });
     lp.connect(g); g.connect(musicBus); lfo.start(t);
     music.drone = { g: g, oscs: oscs.concat([lfo]) };
@@ -1558,8 +1617,84 @@ var SFX = (function () {
     } catch (e) { }
     music.drone = null;
   }
+  // ---- 에러 배경음 ('치명적 오류'를 쥐면): 8비트 칩튠이 오류를 일으킴 ----
+  // 음색 구성은 NES(패미컴) 음원칩 2A03 을 따름 — 펄스(리드) · 삼각파(베이스) · 노이즈(드럼)
+  // 비트크러셔: Tone.js BitCrusher(MIT) 의 양자화 식  step·floor(x/step + 0.5),  step = 0.5^(bits−1)  을 WaveShaper 곡선으로
+  // 마디마다 절반 확률로 오류: 되감기 반복(stutter) · 신호 끊김(drop) · 테이프 정지(tape) · 데이터 폭주(burst) → 화면 글리치와 동기
+  var gBus = null, gGate = null, gOut = null, GSC = [0, 3, 5, 6, 7, 10, 12], GPROG = [0, 0, -4, -2];   // 블루스 스케일(♭5 = 어긋난 느낌), i–i–♭VI–♭VII
+  function crushCurve(bits) {
+    var n = 4096, cv = new Float32Array(n), step = Math.pow(0.5, bits - 1);
+    for (var i = 0; i < n; i++) { var x = i / (n - 1) * 2 - 1; cv[i] = step * Math.floor(x / step + 0.5); }
+    return cv;
+  }
+  function glitchBus() {                                                // 목소리(최대 ±1) → 비트크러셔 → 음량 → 게이트(끊김용) → 음악 버스
+    if (gBus) return gBus;
+    var cr = ac.createWaveShaper();
+    gBus = ac.createGain(); gGate = ac.createGain(); gOut = ac.createGain();
+    cr.curve = crushCurve(4); gOut.gain.value = 0.05;                   // 크러셔는 큰 신호에서 계단이 들리므로 음량은 크러셔 뒤에서 줄인다
+    gBus.connect(cr); cr.connect(gOut); gOut.connect(gGate); gGate.connect(musicBus);
+    return gBus;
+  }
+  function gv(type, f0, f1, t, dur, vol) {                              // 칩튠 음 하나: 딱 켜지고 딱 꺼지는 봉투
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t);
+    if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.setValueAtTime(vol, t + dur * 0.8); g.gain.linearRampToValueAtTime(0, t + dur);
+    o.connect(g); g.connect(gBus); o.start(t); o.stop(t + dur + 0.02);
+  }
+  function gn(t, dur, vol, ft, f, q) {                                  // 노이즈 채널 (하이햇 · 스네어 · 치직)
+    var src = ac.createBufferSource(), fl = ac.createBiquadFilter(), g = ac.createGain();
+    src.buffer = noiseBuf; fl.type = ft; fl.frequency.value = f; fl.Q.value = q || 0.8;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.connect(fl); fl.connect(g); g.connect(gBus); src.start(t, Math.random() * 1.5); src.stop(t + dur + 0.02);
+  }
+  var hooks = { onGlitch: null };                                       // 게임이 화면 글리치를 음악의 오류에 맞춘다
+  function notifyGlitch(t, dur) {
+    if (!hooks.onGlitch) return;
+    setTimeout(function () { if (music.style === 'glitch' && hooks.onGlitch) hooks.onGlitch(dur); }, Math.max(0, (t - ac.currentTime) * 1000));
+  }
+  function glitchEvent(ev, t, b, st, root) {
+    if (ev === 'stutter') {                                              // 되감기 반복: 같은 음을 32분음표로 두 번씩, 한 칸마다 단3도씩 높게
+      var f = root * 2 * Math.pow(2, (b - 12) * 3 / 12);
+      gv('square', f, 0, t, st * 0.42, 0.9); gv('square', f, 0, t + st / 2, st * 0.42, 0.9);
+      if (b === 12) notifyGlitch(t, st * 4);
+    } else if (ev === 'drop') {                                         // 신호 끊김: 3칸 동안 음악 경로를 막았다가 치직 하며 복귀
+      if (b !== 12) return;
+      gGate.gain.setValueAtTime(0, t); gGate.gain.setValueAtTime(1, t + st * 3);
+      gn(t + st * 3, 0.07, 0.9, 'highpass', 3000); notifyGlitch(t, st * 3);
+    } else if (ev === 'tape') {                                         // 테이프 정지: 톱니파가 뚝 떨어지며 늘어짐
+      if (b !== 12) return;
+      gv('sawtooth', root, root / 6, t, st * 4, 0.8); notifyGlitch(t + st * 2, st * 2);
+    } else {                                                            // 데이터 폭주: 무작위 주파수 삑삑 (모뎀)
+      for (var k = 0; k < 3; k++) gv('square', 400 + Math.random() * 3000, 0, t + k * st / 3, st / 3.3, 0.6);
+      if (b === 12) notifyGlitch(t, st * 4);
+    }
+  }
+  function glitchTick() {
+    var st = music.mode === 'lobby' ? 0.125 : 0.107;                   // 16분음표: 로비 120 BPM · 던전 140 BPM
+    if (music.next < ac.currentTime - 0.2) music.next = ac.currentTime + 0.05;
+    while (music.next < ac.currentTime + 0.4) {
+      var t = Math.max(music.next, ac.currentTime + 0.02), s = music.step++, b = s % 16, bar = Math.floor(s / 16);
+      if (b === 0) music.ev = Math.random() < 0.5 ? ['stutter', 'drop', 'tape', 'burst'][(Math.random() * 4) | 0] : null;
+      var ev = music.ev, evOn = !!ev && b >= 12, root = music.root * Math.pow(2, GPROG[bar % 4] / 12);
+      if (!evOn || ev === 'burst') {                                    // 노이즈 채널: 킥 · 스네어 · 하이햇 (가끔 튀는 칸)
+        if (b === 0 || b === 6 || b === 10 || (b === 14 && Math.random() < 0.3)) gv('sine', 150, 40, t, 0.14, 0.95);
+        if (b === 4 || b === 12) { gn(t, 0.12, 0.75, 'bandpass', 1800, 0.9); gv('triangle', 220, 150, t, 0.06, 0.5); }
+        if (b % 2 === 0) gn(t, b === 14 ? 0.12 : 0.03, 0.4, 'highpass', 7000); else if (Math.random() < 0.15) gn(t, 0.03, 0.3, 'highpass', 8000);
+      }
+      if (!evOn && [0, 3, 6, 8, 11].indexOf(b) >= 0) gv('triangle', root / 2 * (b === 8 ? 2 : 1), 0, t, st * (b === 0 ? 2.5 : 1.6), 0.85);   // 삼각파 베이스
+      if (!evOn && b % 2 === 1 && Math.random() < 0.6) {                // 펄스 리드 아르페지오 (10% 는 반음 어긋난 '틀린 음')
+        var d = GSC[(Math.random() * GSC.length) | 0] + (Math.random() < 0.3 ? 12 : 0) + (Math.random() < 0.1 ? 1 : 0);
+        gv('square', root * 2 * Math.pow(2, d / 12), 0, t, st * 0.9, 0.5);
+      }
+      if (Math.random() < 0.05) gv('square', 1500 + Math.random() * 2500, 0, t, 0.03, 0.4);   // 컴퓨터 삑
+      if (evOn) glitchEvent(ev, t, b, st, root);
+      music.next += st;
+    }
+  }
   function musicTick() {
     if (!ac || !music.mode) return;
+    if (music.style === 'glitch') { glitchTick(); return; }
     var sc = SCALES[music.mode], beat = music.mode === 'lobby' ? 0.78 : 0.64;
     // 탭이 숨겨져 타이머가 밀렸으면 놓친 음표는 버린다 (한꺼번에 몰아 재생하면 소리 뭉개짐 + 순간 부하)
     if (music.next < ac.currentTime - 0.2) music.next = ac.currentTime + 0.05;
@@ -1576,11 +1711,13 @@ var SFX = (function () {
       music.next += beat;
     }
   }
-  function setMusic(mode, seed) {
+  // style: '' = 기본, 'glitch' = 에러 배경음 (쥔 무기에 따라 게임이 정한다)
+  function setMusic(mode, seed, style) {
     if (mode && !musicOn()) mode = null;
-    if (mode === music.mode && (mode === null || seed === music.seed)) return;
-    var c = mode ? ensure() : ac;
-    music.mode = mode; music.seed = seed;
+    style = mode && style === 'glitch' ? 'glitch' : '';
+    if (mode === music.mode && style === (music.style || '') && (mode === null || seed === music.seed)) return;
+    var c = mode ? ensure() : ac, swap = !!(mode && mode === music.mode && seed === music.seed);   // 같은 곳에서 무기만 바꿈 → 빠르게 전환
+    music.mode = mode; music.seed = seed; music.style = style;
     if (music.timer) { clearInterval(music.timer); music.timer = null; }
     if (!c) return;
     var t = c.currentTime;
@@ -1590,17 +1727,48 @@ var SFX = (function () {
     // 던전마다 으뜸음을 달리해 분위기 변화
     var roots = [110, 98, 123.47, 103.83, 130.81, 92.5, 116.54, 110, 98, 87.31, 103.83, 123.47];
     music.root = mode === 'lobby' ? 130.81 : roots[(seed || 0) % roots.length];
-    music.next = t + 0.3; music.step = 0; music.deg = 3;
-    musicBus.gain.linearRampToValueAtTime(mode === 'lobby' ? 0.75 : 0.9, t + 1.5);
-    if (mode === 'dungeon') startDrone(music.root); else stopDrone();
-    music.timer = setInterval(musicTick, 200);
+    music.next = t + (swap ? 0.06 : 0.3); music.step = 0; music.deg = 3;
+    musicBus.gain.linearRampToValueAtTime(mode === 'lobby' ? 0.75 : 0.9, t + (swap ? 0.3 : 1.5));
+    if (style === 'glitch') {
+      glitchBus(); gGate.gain.cancelScheduledValues(t); gGate.gain.setValueAtTime(1, t);
+      gOut.gain.setTargetAtTime(mode === 'lobby' ? 0.026 : 0.045, t, 0.05);                  // 기본 배경음과 같은 크기로 (실측 RMS 기준)
+      if (swap) { gv('square', 1400, 70, t, 0.32, 0.9); gn(t, 0.25, 0.8, 'bandpass', 2400); notifyGlitch(t, 0.3); }   // 전환 순간: 오류 나며 뚝 떨어지는 소리
+    } else if (swap) [523.3, 659.3, 784].forEach(function (f, i) { mNote(f, t + i * 0.06, 0.5, 0.03); });              // 되돌아올 땐 맑은 재부팅 화음
+    if (mode === 'dungeon') startDrone(music.root, style); else stopDrone();
+    music.timer = setInterval(musicTick, style === 'glitch' ? 120 : 200);
     musicTick();
   }
-  function musicDuck(on) {  // 궁극기 같은 큰 연출 동안 배경음악만 낮춘다 (뮤직 더킹)
+  function musicDuck(on, lv) {  // 궁극기 같은 큰 연출 동안 배경음악만 낮춘다 (뮤직 더킹). lv: 낮출 수준 (지정하면 즉시)
     if (!ac || !musicDuckG) return;
     var t = ac.currentTime;
     musicDuckG.gain.cancelScheduledValues(t);
-    musicDuckG.gain.setTargetAtTime(on ? 0.12 : 1, t, on ? 0.12 : 0.45);
+    musicDuckG.gain.setTargetAtTime(on ? (lv === undefined ? 0.12 : lv) : 1, t, on ? (lv === undefined ? 0.12 : 0.008) : 0.45);
+  }
+  // ================================================================ 블루스크린 궁극기 사운드 (치명적 오류)
+  function errorCharge(dur) {                                           // 과부하: 점점 빨라지고 높아지는 오류 삑 + 차오르는 톱니파
+    for (var t = 0; t < dur - 0.04; t += 0.16 - 0.13 * (t / dur)) tone(700 + 1700 * t / dur, 0, 0.04, 'square', 0.035 + 0.03 * t / dur, t);
+    tone(90, 900, dur, 'sawtooth', 0.045, 0, { attack: dur * 0.85 });
+    noise(dur, 0.06, 0, 'bandpass', 400, 5000, 1.5, dur * 0.85);
+  }
+  function bsodCrash(hold) {                                            // 멈춤: 뚝 떨어지는 사각파 + 30ms 조각이 되풀이되는 '브르르' → 전원 험만 남음
+    tone(1400, 60, 0.28, 'square', 0.09);
+    noise(0.3, 0.2, 0, 'lowpass', 6000, 300, 0.8, 0.002);
+    tone(33, 33, 0.36, 'sawtooth', 0.14, 0.02); tone(66.5, 66.5, 0.36, 'square', 0.05, 0.02);
+    tone(50, 50, hold, 'sine', 0.06, 0.3, { attack: 0.15 });
+  }
+  function bsodBack() { tone(80, 2400, 0.2, 'square', 0.05); noise(0.26, 0.15, 0, 'highpass', 800, 9000, 0.8, 0.01); }   // 화면이 찢어지며 복귀
+  function deleteBlip(i) {                                              // 삭제될 때마다 한 음씩 올라가는 비트음
+    var f = 520 * Math.pow(2, Math.min(i, 12) * 2 / 12);
+    tone(f * 2, f / 2, 0.09, 'square', 0.045); tone(f, 0, 0.06, 'triangle', 0.06, 0.05); noise(0.04, 0.09, 0, 'highpass', 5000);
+  }
+  function gradeFanfare(lv) {                                           // 평가 도장 '쾅' + 칩튠 팡파르 (등급이 높을수록 길고 화려하게)
+    tone(110, 40, 0.35, 'sine', 0.4); noise(0.18, 0.2, 0, 'lowpass', 3000, 200, 0.8, 0.002);
+    if (lv <= 0) { tone(330, 0, 0.14, 'square', 0.05, 0.1); tone(247, 0, 0.3, 'square', 0.05, 0.26); return; }   // 404: 김빠진 두 음
+    var notes = [523.3, 659.3, 784, 1046.5, 1318.5, 1568], n = Math.min(notes.length, 2 + lv), t1 = 0.08 + n * 0.07;
+    for (var i = 0; i < n; i++) tone(notes[i], 0, 0.1, 'square', 0.045, 0.08 + i * 0.07);
+    tone(notes[n - 1], 0, 0.55, 'square', 0.04, t1, { vib: 7, vibDepth: 8 });
+    if (lv >= 3) chord([1046.5, 1318.5, 1568, 2093], 0.6, 'triangle', 0.035, t1, 0.02);
+    noise(0.5, 0.05, t1, 'highpass', 6000, 10000);
   }
   function duck(on) { // 일시정지/탭 숨김 시 배경음 줄이기
     if (!ac || !musicBus) return;
@@ -1996,7 +2164,8 @@ var SFX = (function () {
     _tap: function () { var c = ensure(); if (!c) return null; var an = c.createAnalyser(); an.fftSize = 2048; compNode.connect(an); return an; },
     unlock: ensure,
     setMusic: setMusic, duck: duck, musicDuck: musicDuck,
-    refreshMusic: function (mode, seed) { music.mode = undefined; setMusic(mode, seed); },
+    errorCharge: errorCharge, bsodCrash: bsodCrash, bsodBack: bsodBack, deleteBlip: deleteBlip, gradeFanfare: gradeFanfare,
+    refreshMusic: function (mode, seed, style) { music.mode = undefined; setMusic(mode, seed, style); }, hooks: hooks,
     click: function () { tone(720, 660, 0.05, 'triangle', 0.06); },
     tab: function () { tone(520, 640, 0.05, 'triangle', 0.05); },
     flip: function () { noise(0.11, 0.07, 0, 'bandpass', 1400, 3600, 1.4, 0.03); },
@@ -2060,7 +2229,7 @@ var FX = (function () {
   var transient = [];      // 수명이 있는 메시/스프라이트 이펙트
   var projectiles = [];
   var fxLight = null, fxLightT = 0, fxLightDur = 1, fxLightPeak = 0;
-  var hooks = { shake: null, screenFlash: null };
+  var hooks = { shake: null, screenFlash: null, glitch: null };
   var pointScale = 600;
   var V = new THREE.Vector3(), V2 = new THREE.Vector3(), V3 = new THREE.Vector3();
   var C = new THREE.Color(), C2 = new THREE.Color();
@@ -2173,6 +2342,25 @@ var FX = (function () {
         c.strokeStyle = 'rgba(255,255,255,' + (0.9 * (1 - u0 * 0.6) * Math.min(1, u0 * 6)).toFixed(3) + ')'; c.lineWidth = 2 + 10 * (1 - u0);
         c.beginPath(); c.moveTo(p0[0], p0[1]); c.lineTo(p1[0], p1[1]); c.stroke();
       }
+    });
+    // '텍스처 없음' 체커(마젠타·검정) — 게임 엔진이 텍스처를 못 찾을 때 보여주는 그 무늬. 픽셀이 뭉개지지 않게 최근접 필터
+    tex.checker = canvasTex(16, function (c, s) { c.fillStyle = '#000'; c.fillRect(0, 0, s, s); c.fillStyle = '#ff00ff'; c.fillRect(0, 0, s / 2, s / 2); c.fillRect(s / 2, s / 2, s / 2, s / 2); });
+    tex.checker.magFilter = tex.checker.minFilter = THREE.NearestFilter; tex.checker.generateMipmaps = false;
+    tex.checkerFine = tex.checker.clone(); tex.checkerFine.wrapS = tex.checkerFine.wrapT = THREE.RepeatWrapping; tex.checkerFine.repeat.set(5, 5);
+    tex.checkerFine.userData = { shared: true }; tex.checkerFine.needsUpdate = true;
+    // 에러 창 팝업 (RGB 가 어긋난 글자 + 주사선)
+    tex.err = ['ERROR', '404', 'NaN', 'null', '0xDEAD', 'SEGFAULT', 'undefined', '!?'].map(function (word, i) {
+      var cv = document.createElement('canvas'); cv.width = 256; cv.height = 96;
+      var c = cv.getContext('2d');
+      c.fillStyle = 'rgba(8,8,18,0.88)'; c.fillRect(6, 10, 244, 76);
+      c.strokeStyle = i % 2 ? '#ff2bd6' : '#2bffe0'; c.lineWidth = 4; c.strokeRect(6, 10, 244, 76);
+      c.font = 'bold ' + (word.length > 6 ? 34 : 44) + 'px monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillStyle = 'rgba(255,40,110,0.9)'; c.fillText(word, 124, 50);
+      c.fillStyle = 'rgba(40,255,235,0.9)'; c.fillText(word, 132, 50);
+      c.fillStyle = '#fff'; c.fillText(word, 128, 48);
+      c.fillStyle = 'rgba(0,0,0,0.28)'; for (var y = 12; y < 86; y += 4) c.fillRect(8, y, 240, 2);
+      var t = new THREE.CanvasTexture(cv); t.userData = { shared: true };
+      return t;
     });
   }
 
@@ -2490,8 +2678,8 @@ var FX = (function () {
       p.floor = o.floor === undefined ? 0.06 : o.floor; p.flutter = o.flutter || 0;
       var s = pick(o.size || [0.1, 0.18]), sh = o.shape || [1, 1, 1];
       p.sx = s * sh[0]; p.sy = s * sh[1]; p.sz = s * sh[2];
-      p.rx = rnd(0, 6); p.ry = rnd(0, 6); p.rz = rnd(0, 6);
-      var w = o.spin === undefined ? 9 : o.spin; p.wx = rnd(-w, w); p.wy = rnd(-w, w); p.wz = rnd(-w, w);
+      if (o.pixel) { p.rx = p.ry = p.rz = 0; } else { p.rx = rnd(0, 6); p.ry = rnd(0, 6); p.rz = rnd(0, 6); }   // pixel: 화면과 나란한 네모 픽셀 (회전 없음)
+      var w = o.pixel ? 0 : o.spin === undefined ? 9 : o.spin; p.wx = rnd(-w, w); p.wy = rnd(-w, w); p.wz = rnd(-w, w);
       chunks.obj.setColorAt(p.i, C.setHex(o.prism ? PRISM[(Math.random() * PRISM.length) | 0] : colors[(Math.random() * colors.length) | 0]));
     }
     if (chunks.obj.instanceColor) chunks.obj.instanceColor.needsUpdate = true;
@@ -2753,8 +2941,8 @@ var FX = (function () {
     grp.position.set(origin.x + dir.x * (o.fwd || 0.25), (o.y === undefined ? 1.15 : o.y), origin.z + dir.z * (o.fwd || 0.25));
     grp.rotation.order = 'YZX'; grp.rotation.set(0, yawOf(dir), o.tilt || 0);
     var g = geo[o.geo || 'crescent'];
-    var outer = mesh(g, o.prism ? PRISM[(Math.random() * 7) | 0] : E.c2, { vc: true });
-    var inner = mesh(g, E.c1, { vc: true });
+    var outer = mesh(g, o.col !== undefined ? o.col : o.prism ? PRISM[(Math.random() * 7) | 0] : E.c2, { vc: true });
+    var inner = mesh(g, o.colIn !== undefined ? o.colIn : E.c1, { vc: true });
     inner.scale.set(0.94, 1, 0.94);
     var pivot = new THREE.Group(); pivot.add(outer); pivot.add(inner); grp.add(pivot);
     var R = o.radius || 1.7, a0 = o.spinFrom === undefined ? 1.1 : o.spinFrom, a1 = o.spinTo === undefined ? -0.9 : o.spinTo;
@@ -2769,7 +2957,7 @@ var FX = (function () {
     }, o.delay);
     // 호를 따라 흩날리는 입자
     V.set(origin.x + dir.x * (R * 0.75), grp.position.y, origin.z + dir.z * (R * 0.75));
-    emitTo(glow, { pos: V, n: o.sparks === undefined ? 7 : o.sparks, spread: R * 0.45, spreadY: 0.5, dir: dir, cone: 1.1, speed: [1.5, 4.5], life: [0.2, 0.45], size: [0.1, 0.2], sizeEnd: 0, color: [E.c1, E.c2], prism: o.prism, drag: 3, delay: [0, 0.08] });
+    if (o.sparks !== 0) emitTo(glow, { pos: V, n: o.sparks === undefined ? 7 : o.sparks, spread: R * 0.45, spreadY: 0.5, dir: dir, cone: 1.1, speed: [1.5, 4.5], life: [0.2, 0.45], size: [0.1, 0.2], sizeEnd: 0, color: [E.c1, E.c2], prism: o.prism, drag: 3, delay: [0, 0.08] });
     return grp;
   }
   // 찌르기 스트릭 + 음속 링
@@ -3648,6 +3836,103 @@ void main() {
     };
   }
 
+  // ---------------------------------------------------------------- 오류 (치명적 오류)
+  // 게임 엔진의 '텍스처 없음' 체커 · RGB 가 어긋난 잔상(색수차) · 찢긴 주사선 · 에러 창. 화면 전체 글리치는 hooks.glitch 로 게임이 그린다
+  var ERR_COL = [0xff2bd6, 0x2bffe0, 0xb6ff3a, 0xffffff], chkMat = null;
+  function glitchScreen(dur, wild) { if (hooks.glitch) hooks.glitch(dur, wild); }
+  function errPopup(pos, o) {                                           // 옆으로 펼쳐졌다가 깜빡이며 꺼지는 에러 창 (가끔 다른 오류로 바뀜)
+    o = o || {};
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.err[o.word === undefined ? (Math.random() * tex.err.length) | 0 : o.word], transparent: true, depthWrite: false, depthTest: false, fog: false }));
+    s.position.copy(pos); s.renderOrder = 10;
+    var w = (o.size || 1) * rnd(0.9, 1.15);
+    addTransient(s, o.life || 0.6, function (ob, k) {
+      var op = Math.min(1, k / 0.1);
+      ob.scale.set(w * (0.15 + 0.85 * op) * (Math.random() < 0.08 ? 1.3 : 1), w * 0.375 * (0.3 + 0.7 * op), 1);
+      ob.material.opacity = k > 0.55 ? (Math.random() < 0.45 ? 0 : 1 - k * 0.6) : 1;
+      if (Math.random() < 0.06) ob.material.map = tex.err[(Math.random() * tex.err.length) | 0];
+    }, o.delay);
+    return s;
+  }
+  function checkerBox(pos, size, life, o) {                             // '텍스처 없음' 상자: 계단식으로 커졌다가 떨리며 계단식으로 줄어 사라짐 (보간 없음)
+    o = o || {};
+    if (!chkMat) chkMat = new THREE.MeshBasicMaterial({ map: tex.checker, fog: false });
+    var m = new THREE.Mesh(geo.box, chkMat); m.frustumCulled = false;
+    var x0 = pos.x, y0 = pos.y, z0 = pos.z, j = o.jitter === undefined ? 0.06 : o.jitter;
+    m.position.copy(pos); m.rotation.set(0, rnd(0, 1.6), 0);
+    addTransient(m, life, function (ob, k) {
+      var q = k < 0.12 ? Math.ceil(k / 0.12 * 3) / 3 : k > 0.62 ? Math.ceil((1 - k) / 0.38 * 4) / 4 : 1;
+      var sc = size * q; ob.scale.set(sc, sc, sc);
+      if (Math.random() < 0.35) ob.position.set(x0 + rnd(-j, j), y0 + rnd(-j, j) * 0.5 + (o.rise || 0) * k, z0 + rnd(-j, j));
+    }, o.delay);
+    return m;
+  }
+  function tearLines(center, dir, len, life, o) {                       // 찢긴 주사선: 가로 막대들이 옆으로 튀며 깜빡 (배치 버퍼 2개 = 드로우콜 2)
+    o = o || {};
+    var n = o.n || 8, bm = boxBatch(n), bc = boxBatch(n);
+    var mm = addMat(0xff2bd6, {}), mc = addMat(0x2bffe0, {});
+    var grp = new THREE.Group(), m1 = new THREE.Mesh(bm.g, mm), m2 = new THREE.Mesh(bc.g, mc);
+    m1.frustumCulled = m2.frustumCulled = false; m1.renderOrder = m2.renderOrder = 7; grp.add(m1); grp.add(m2);
+    var cx = center.x, cy = center.y, cz = center.z, dx = dir.x, dz = dir.z, hh = o.h || 0.9, a = new THREE.Vector3(), b = new THREE.Vector3(), reb = 1;   // 값만 복사 (임시 벡터가 넘어와도 안전)
+    function build() {
+      bm.n = bc.n = 0;
+      for (var i = 0; i < n; i++) {
+        var y = cy + rnd(-hh, hh), mid = rnd(-0.5, 0.5) * len, L = len * rnd(0.2, 0.7), f = rnd(-0.3, 0.3);
+        a.set(cx + dz * (mid - L / 2) + dx * f, y, cz - dx * (mid - L / 2) + dz * f);
+        b.set(cx + dz * (mid + L / 2) + dx * f, y, cz - dx * (mid + L / 2) + dz * f);
+        boxPut(i % 2 ? bc : bm, a, b, rnd(0.02, 0.055));
+      }
+      boxEnd(bm); boxEnd(bc);
+    }
+    addTransient(grp, life, function (ob, k, dt) {
+      reb += dt; if (reb > 0.045) { reb = 0; build(); }                // 0.045초마다 다른 줄이 찢어짐
+      mm.opacity = mc.opacity = (1 - k) * (Math.random() < 0.25 ? 0.15 : 1);
+    }, o.delay);
+    return grp;
+  }
+  // 오류 베기: 빨강·청록으로 어긋난 두 겹 호(색수차) + 흰 되베기 + 찢긴 주사선 + 픽셀 조각
+  function glitchSlash(origin, dir) {
+    var sx = dir.z * 0.1, sz = -dir.x * 0.1;
+    V2.set(origin.x + sx, origin.y, origin.z + sz);
+    slashArc(V2, dir, { el: 'error', tilt: -0.08, radius: 2.3, y: 1.15, geo: 'crescentThin', spinFrom: 1.7, spinTo: -1.6, life: 0.3, col: 0xff2050, colIn: 0xff6aa0, sparks: 0 });
+    V2.set(origin.x - sx, origin.y, origin.z - sz);
+    slashArc(V2, dir, { el: 'error', tilt: -0.02, radius: 2.3, y: 1.21, geo: 'crescentThin', spinFrom: 1.62, spinTo: -1.68, life: 0.3, col: 0x20fff0, colIn: 0x9afff6, sparks: 0 });
+    slashArc(origin, dir, { el: 'error', tilt: 0.12, radius: 2.1, y: 1.3, geo: 'crescentThin', spinFrom: -1.5, spinTo: 1.5, life: 0.26, delay: 0.06, sparks: 0 });
+    V.set(origin.x + dir.x * 1.6, 1.2, origin.z + dir.z * 1.6);
+    tearLines(V, dir, 2.6, 0.3, { n: 6, h: 0.45, delay: 0.04 });
+    chunkBurst({ pos: V, n: 10, spread: 0.7, speed: [1, 3], up: [0.5, 2.5], size: [0.06, 0.11], color: ERR_COL, life: [0.3, 0.55], grav: 3, dir: dir, pixel: true });
+    glitchScreen(0.1, false);
+  }
+  // 오류 타격: 체커 상자 · 색수차 충격파 · 픽셀 파편 · 에러 창 · 텍스처가 빠진 바닥 → 화면 전체가 깨짐
+  function glitchImpact(P, gr, dir, pw, R, lite) {
+    var nb = lite ? 3 : 6;
+    for (var i = 0; i < nb; i++) {
+      V.set(P.x + rnd(-1, 1) * R * 1.1, Math.max(0.15, P.y + rnd(-0.7, 0.8)), P.z + rnd(-1, 1) * R * 1.1);
+      checkerBox(V, rnd(0.14, 0.34) * pw, rnd(0.45, 0.8), { delay: i * 0.025, rise: rnd(0.2, 0.7) });
+    }
+    shockRing(gr, 0xff2050, 0.2, 2.5 * pw, 0.36, { thin: true });
+    V.set(gr.x + 0.12, 0, gr.z - 0.08);
+    shockRing(V, 0x20fff0, 0.2, 2.5 * pw, 0.36, { thin: true, delay: 0.03 });
+    chunkBurst({ pos: P, n: lite ? 8 : 16, spread: R * 0.5, speed: [1.5, 5], up: [2, 6], size: [0.07, 0.14], color: ERR_COL, life: [0.5, 0.9], dir: dir, pixel: true });
+    emitTo(glow, { pos: P, n: lite ? 8 : 14, speed: [2, 6], life: [0.2, 0.45], size: [0.1, 0.18], sizeEnd: 0, color: [0xff2bd6, 0x2bffe0, 0xffffff], drag: 3 });
+    tearLines(P, dir, 2.4 * pw, lite ? 0.25 : 0.4, { n: lite ? 4 : 8, h: 0.8 });
+    if (!lite) {
+      for (var e = 0; e < 2; e++) { V.set(P.x + rnd(-0.9, 0.9), P.y + rnd(0.5, 1.3), P.z + rnd(-0.4, 0.4)); errPopup(V, { size: 1.05, life: 0.65, delay: 0.03 + e * 0.1 }); }
+      decal(tex.checkerFine, 0xffffff, gr, 1.7 * pw, 1.1, { normal: true, opacity: 0.55, hold: 0.7, rot: yawOf(dir) });
+    }
+    flash(P, 0xff2bd6, 3 * pw, 0.3);
+    glitchScreen(lite ? 0.14 : 0.24 * pw, !lite);
+    shake(0.3 * pw);
+  }
+  // 블루스크린 삭제: 대상이 '텍스처 없음' 상자로 굳었다가 픽셀로 흩어지며 사라짐 (궁극기)
+  function glitchDelete(P, gr, R, i) {
+    checkerBox(P, R * 1.25, 0.34, { jitter: 0.1 });
+    var P0 = P.clone();
+    after(0.3, function () { chunkBurst({ pos: P0, n: 12, spread: R * 0.6, speed: [0.5, 2.5], up: [1.5, 4.5], size: [0.08, 0.15], color: ERR_COL, life: [0.6, 1.1], grav: 5, pixel: true }); });
+    emitTo(glow, { pos: P, n: 10, spread: R * 0.5, speed: [0.3, 1.5], up: [1, 3], life: [0.4, 0.8], size: [0.12, 0.2], sizeEnd: 0, color: ERR_COL, drag: 1.5, delay: [0.28, 0.36] });
+    shockRing(gr, i % 2 ? 0x20fff0 : 0xff2050, 0.2, 1.8, 0.4, { thin: true, delay: 0.3 });
+    if (i < 4) { V.set(P.x, P.y + R + 0.5, P.z); errPopup(V, { word: i === 0 ? 0 : undefined, size: 1.1, life: 0.7, delay: 0.3 }); }
+  }
+
   // ---------------------------------------------------------------- 속성별 타격 이펙트
   // p: 타격 지점(몬스터 몸통 중앙), o: { dir(수평 단위벡터), ground(Vector3 발밑), power, radius(몬스터 크기), prism }
   function impact(elKey, p, o) {
@@ -3796,6 +4081,9 @@ void main() {
       case 'blackhole':
         bhCollapse(P, { ground: gr, power: pw, lite: !!o.lite });
         break;
+      case 'error':
+        glitchImpact(P, gr, dir, pw, R, !!o.lite);
+        break;
       default: // steel
         emitTo(glow, { pos: P, n: 16, dir: dir, cone: 1.15, speed: [4, 10], up: [1, 3], life: [0.2, 0.5], size: [0.09, 0.17], sizeEnd: 0, color: [0xffffff, 0xffe6a0, 0xffb060], grav: 15, floor: 0.05, drag: 0.5 });
         chunkBurst({ pos: P, n: 5, speed: [2, 4.5], up: [2.5, 5], size: [0.07, 0.12], color: [0xc8d2e0, 0x8a94a6], life: [0.6, 1], dir: dir });
@@ -3869,8 +4157,8 @@ void main() {
   // 재질을 폐기하지 않으므로 컴파일된 프로그램이 유지되어, 실전 첫 타격에서도 끊기지 않는다.
   function prewarm(renderer, camera, afterSpawn) {
     if (!scene || !renderer || !camera) return;
-    var sh = hooks.shake, sf = hooks.screenFlash;
-    hooks.shake = function () {}; hooks.screenFlash = function () {};
+    var sh = hooks.shake, sf = hooks.screenFlash, sg = hooks.glitch;
+    hooks.shake = function () {}; hooks.screenFlash = function () {}; hooks.glitch = null;
     var P = new THREE.Vector3(0, -80, 0), D = new THREE.Vector3(0, 0, 1);
     var dummy = new THREE.Object3D(); dummy.position.copy(P);
     function tryDo(f) { try { f(); } catch (e) { /* 프리워밍 실패는 무시 (최적화일 뿐) */ } }
@@ -3897,6 +4185,7 @@ void main() {
     ['orb', 'fireball', 'arrow'].forEach(function (k) {
       tryDo(function () { projectile(P.clone(), P.clone().add(D), { el: k === 'fireball' ? 'fire' : 'star', kind: k, dur: 5 }); });
     });
+    tryDo(function () { glitchSlash(P.clone(), D.clone()); glitchDelete(P.clone(), P.clone(), 0.7, 0); });
     tryDo(function () { deathBurst(P.clone(), 0xffffff, true); });
     tryDo(function () { lootOrbs(P.clone(), dummy, 2, [0xffd23e], null); });
     tryDo(function () { levelUp(P.clone()); });
@@ -3908,7 +4197,7 @@ void main() {
     try { renderer.compile(scene, camera); } catch (e) { }
     if (afterSpawn) { try { afterSpawn(); } catch (e) { } }   // 이펙트가 떠 있는 상태로 한 번 그려 버퍼까지 업로드
     clearAll();
-    hooks.shake = sh; hooks.screenFlash = sf;
+    hooks.shake = sh; hooks.screenFlash = sf; hooks.glitch = sg;
   }
   function setScene(s) {
     clearAll();
@@ -3965,6 +4254,7 @@ void main() {
     Trail: Trail, slashArc: slashArc, thrustStreak: thrustStreak, groundSlam: groundSlam, chargeAt: chargeAt, projectile: projectile,
     bhCharge: bhCharge, bhLaunch: bhLaunch, bhOpen: bhOpen, bhCollapse: bhCollapse, bhUltHole: bhUltHole, diskMat: diskMat, after: after,
     impact: impact, novaCollapse: novaCollapse, novaBreakout: novaBreakout, binaryInspiral: binaryInspiral, whiteDwarfMerger: whiteDwarfMerger, inspiralRatio: inspiralRatio, meteor: meteor, meteorImpact: meteorImpact, meteorCall: meteorCall, cometCrash: cometCrash, debris: debris, deathBurst: deathBurst, lootOrbs: lootOrbs, levelUp: levelUp, victory: victory, dust: dust, hurtBurst: hurtBurst,
+    glitchSlash: glitchSlash, glitchDelete: glitchDelete, errPopup: errPopup, checkerBox: checkerBox, tearLines: tearLines,
     haloSprite: haloSprite, PRISM: PRISM,
     get scene() { return scene; }, get activeCount() { return (glow ? glow.active : 0) + (chunks ? chunks.active : 0) + transient.length; }
   };
@@ -4355,7 +4645,7 @@ var M = (function () {
     var w = weaponById(id), E = EL(w.el), el = w.el;
     var g = new THREE.Group();
     var ticks = [];
-    var base = null, tip = null, off = null, rest = null, novaAPI = null, bhAPI = null;
+    var base = null, tip = null, off = null, rest = null, novaAPI = null, bhAPI = null, glitchAPI = null;
     var type = w.type;
     var bm = bladeMat(E, el), cm = coreMat(E);
     var metal = mat(0x8e9aae), dark = mat(0x2a3040), wood = mat(0x5c4a33), leather = mat(0x3a2a1e);
@@ -4382,6 +4672,58 @@ var M = (function () {
       base = marker(g, 0.3); tip = marker(g, 1.45);
       glowOn(g, 0.8, 1.5);
       rest = { pos: [0.06, -0.02, 0.14], rot: [2.05, 0, -0.12] };
+    } else if (type === 'katana' && w.glitch) {             // 치명적 오류: 텍스처를 잃은(마젠타·검정 체커) 픽셀 칼날 — 빠진 칸 · RGB 잔상 · 옆으로 어긋나는 조각 · 에러 창
+      var chkM = new THREE.MeshBasicMaterial({ map: FX.tex.checker }), pixM = basic(0x2bffe0), blkM = mat(0x14141c, { flat: true });
+      var VX = 0.074, chkP = [], pixP = [], blkP = [], slc = [[], [], []], SLICE = { 5: 0, 6: 0, 9: 1, 10: 1, 13: 2 };
+      var prng = makeRNG(404);                                                                      // 무늬는 늘 같게 (빠진 칸 위치 고정)
+      for (var hy = 0; hy < 6; hy++) blkP.push(box(g, 0.062, VX, 0.062, blkM, 0, -0.24 + hy * VX, 0));   // 손잡이
+      for (var gx2 = -1; gx2 <= 1; gx2++) for (var gz2 = -1; gz2 <= 1; gz2++) if (gx2 || gz2) chkP.push(box(g, VX, VX * 0.55, VX, chkM, gx2 * VX, 0.19, gz2 * VX));   // 코등이
+      for (var bi4 = 0; bi4 < 16; bi4++) {                                                           // 칼날 16칸 × 2열 (등·날), 완만하게 휨
+        var byy = 0.26 + bi4 * VX, bzz = bi4 * bi4 * 0.0015;
+        for (var bj4 = 0; bj4 < (bi4 > 13 ? 1 : 2); bj4++) {
+          var rr4 = prng();
+          if (bi4 > 1 && bi4 < 15 && rr4 < 0.09) continue;                                              // 깨져서 빠진 칸
+          var isPix = bj4 === 1 && rr4 < 0.55, mm = isPix ? pixM : chkM;                               // 날 쪽은 청록 픽셀이 섞임
+          var cube = box(g, VX * 0.42, VX, VX, mm, 0, byy, bzz + bj4 * VX);
+          if (!isPix && SLICE[bi4] !== undefined) slc[SLICE[bi4]].push(cube); else (isPix ? pixP : chkP).push(cube);
+        }
+      }
+      var chkMesh = mergeParts(g, chkP, chkM); mergeParts(g, pixP, pixM); mergeParts(g, blkP, blkM);   // 정적 칸 수십 개 → 3 드로우
+      var slices = slc.map(function (list) {                                                     // 글리치 때 옆으로 어긋나는 칼날 조각 3개
+        var sg = group(g, 0, 0, 0);
+        list.forEach(function (c) { g.remove(c); sg.add(c); });
+        if (list.length) mergeParts(sg, list, chkM);
+        return sg;
+      });
+      var ghostR = add(g, new THREE.Mesh(chkMesh.geometry, basic(0xff2050, { add: true, opacity: 0.55 })));   // RGB 잔상 (같은 지오메트리 공유)
+      var ghostC = add(g, new THREE.Mesh(chkMesh.geometry, basic(0x20fff0, { add: true, opacity: 0.55 })));
+      ghostR.visible = ghostC.visible = false;
+      var pops = [0, 1].map(function (i) {                                                          // 칼 주위에 떴다 사라지는 에러 창
+        var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: FX.tex.err[i], transparent: true, depthWrite: false, fog: false }));
+        sp.scale.set(0.42, 0.16, 1); sp.visible = false; sp.renderOrder = 9; g.add(sp); return sp;
+      });
+      var glowE = FX.haloSprite(0xff2bd6, 1.3, 0.35); glowE.position.set(0, 0.85, 0.12); g.add(glowE);
+      base = marker(g, 0.3); tip = marker(g, 1.4, 0.34);
+      var gNext = 0.8, gUntil = 0, gForce = 0, lastT3 = 0;
+      glitchAPI = { burst: function (d) { gForce = Math.max(gForce, lastT3 + (d || 0.25)); } };     // 공격·궁극기 때 강제로 깨뜨림
+      ticks.push(function (t) {
+        lastT3 = t;
+        if (t > gNext) { gUntil = t + 0.06 + Math.random() * 0.16; gNext = t + 0.6 + Math.random() * 1.8; }   // 평소엔 가끔 짧게
+        var on = t < gUntil || t < gForce;
+        for (var q = 0; q < slices.length; q++) { var sl = slices[q]; sl.position.set(on && Math.random() < 0.7 ? (Math.random() - 0.5) * 0.14 : 0, 0, on ? (Math.random() - 0.5) * 0.08 : 0); }
+        ghostR.visible = ghostC.visible = on;
+        if (on) { var dx4 = 0.02 + Math.random() * 0.04; ghostR.position.set(dx4, (Math.random() - 0.5) * 0.03, 0); ghostC.position.set(-dx4, (Math.random() - 0.5) * 0.03, 0); }
+        pixM.color.setHex(on && Math.random() < 0.5 ? [0xff2bd6, 0xb6ff3a, 0xffffff][(Math.random() * 3) | 0] : 0x2bffe0);
+        glowE.material.opacity = on ? 0.6 : 0.28 + Math.sin(t * 7) * 0.05;
+        for (var pq = 0; pq < pops.length; pq++) {
+          var pp = pops[pq];
+          if (Math.random() < (on ? 0.25 : 0.012)) {                                                // 가끔 다른 에러 창으로 바뀌며 깜빡
+            pp.visible = !pp.visible;
+            if (pp.visible) { pp.material.map = FX.tex.err[(Math.random() * FX.tex.err.length) | 0]; pp.position.set((pq ? -0.3 : 0.3) + (Math.random() - 0.5) * 0.1, 0.5 + Math.random() * 0.9, 0.1 + Math.random() * 0.2); }
+          }
+        }
+      });
+      rest = { pos: [0.06, -0.02, 0.12], rot: [2.2, 0, -0.1] };
     } else if (type === 'katana') {
       var blade = group(g, 0, 0.22, 0);                       // 완만한 곡선: 조각 6개
       for (var ki = 0; ki < 6; ki++) {
@@ -4729,7 +5071,7 @@ var M = (function () {
     if (off) off.traverse(function (c) { if (c.isMesh) c.castShadow = true; });
 
     var tick = ticks.length ? function (t) { for (var i = 0; i < ticks.length; i++) ticks[i](t); } : null;
-    return { g: g, off: off, tick: tick, base: base, tip: tip, rest: rest, type: type, el: el, E: E, def: w, prism: w.stars >= 6 && !w.blackhole, nova: novaAPI, bh: bhAPI };
+    return { g: g, off: off, tick: tick, base: base, tip: tip, rest: rest, type: type, el: el, E: E, def: w, prism: w.stars >= 6 && !w.blackhole && !w.glitch, nova: novaAPI, bh: bhAPI, glitch: glitchAPI };
   }
   function buildSword(id) { return buildWeapon(id); } // 구버전 호환
 
@@ -5958,7 +6300,7 @@ var UI = (function () {
       '<div class="pause-title">⚙ 설정</div>' +
       '<div class="set-row"><span>효과음</span><button class="btn small" id="set-sound">켜짐</button></div>' +
       '<div class="set-row"><span>배경음</span><button class="btn small" id="set-music">켜짐</button></div>' +
-      '<div class="set-row"><span>화면 흔들림</span><button class="btn small" id="set-shake">켜짐</button></div>' +
+      '<div class="set-row"><span>화면 흔들림·글리치</span><button class="btn small" id="set-shake">켜짐</button></div>' +
       '<div class="set-row"><span>그래픽 품질</span><button class="btn small" id="set-quality">자동</button></div>' +
       '<button class="btn" id="set-close">닫기</button>' +
       '<button class="btn warn small" id="set-reset">진행 상황 초기화</button>' +
@@ -5973,11 +6315,14 @@ var UI = (function () {
     els.combo = h('<div id="combo"><b id="combo-n">0</b><span>연속 정답</span></div>');
     els.ultBtn = h('<button id="ult-btn" aria-label="궁극기"><span class="ult-in"><span class="ult-ico">⚡</span><span class="ult-lbl" id="ult-lbl">0%</span></span><span class="ult-key" id="ult-key">Q</span></button>');
     els.ultOverlay = h('<div id="ult-overlay"></div>');
+    els.bsod = h('<div id="bsod"><div class="bs-face">:(</div><div class="bs-msg">던전에 문제가 발생하여 몬스터를 삭제해야 합니다. 오류 정보를 수집하고 있으며, 그런 다음 자동으로 삭제합니다.</div>' +
+      '<div class="bs-pct" id="bs-pct">0% 완료</div><div class="bs-code">중지 코드: CRITICAL_MONSTER_DELETED<br>실패한 항목: 치명적_오류.sys</div></div>');
+    els.grade = h('<div id="ult-grade"><div class="g-rays"></div><div class="g-rank g-glitch" id="g-rank" data-t=""></div><div class="g-title g-glitch" id="g-title" data-t=""></div><div class="g-sub" id="g-sub"></div></div>');
     els.toast = h('<div id="toast"></div>');
     els.fade = h('<div id="fade"></div>');
 
     [els.vignette, els.ultOverlay, els.floats, els.hud, els.combo, els.ultBtn, els.battle, els.joyZone, els.lobby, els.study, els.shop, els.book,
-    els.result, els.pause, els.settings, els.start, els.flash, els.fxflash, els.banner, els.toast, els.fade]
+    els.result, els.pause, els.settings, els.start, els.flash, els.fxflash, els.banner, els.bsod, els.grade, els.toast, els.fade]
       .forEach(function (e) { root.appendChild(e); });
 
     // ---- 이벤트 ----
@@ -6485,6 +6830,27 @@ var UI = (function () {
       { opacity: 0, transform: 'translate(-50%,-62%) scale(1)' }
     ], { duration: 1700, easing: 'ease-out', fill: 'forwards' }, 'on');
   }
+  // ---------- 블루스크린 · 궁극기 평가 (치명적 오류) ----------
+  function bsod(pct) {                                   // pct 0~100: 멈춘 화면 + 진행률, -1: 찢어지며 사라짐, null: 즉시 숨김
+    var b = els.bsod;
+    if (pct === null || pct === undefined) { b.className = ''; return; }
+    if (pct < 0) { if (b.classList.contains('on')) b.classList.add('out'); return; }
+    if (b.className !== 'on') b.className = 'on';
+    var tx = Math.floor(pct) + '% 완료', el = $('bs-pct');
+    if (el.textContent !== tx) el.textContent = tx;
+  }
+  var gradeTimer = 0;
+  function ultGrade(g) {                                 // g: { rank, title, sub, cls } — null 이면 즉시 숨김
+    var el = els.grade;
+    clearTimeout(gradeTimer);
+    el.className = '';
+    if (!g) return;
+    [['g-rank', g.rank], ['g-title', g.title]].forEach(function (x) { var e = $(x[0]); e.textContent = x[1]; e.setAttribute('data-t', x[1]); });
+    $('g-sub').textContent = g.sub;
+    void el.offsetWidth;                                 // 애니메이션을 처음부터 다시
+    el.className = 'on ' + g.cls;
+    gradeTimer = setTimeout(function () { el.classList.add('off'); gradeTimer = setTimeout(function () { el.className = ''; }, 420); }, g.hold || 2000);
+  }
   function flashRed() {
     anim(els.flash, [{ opacity: 0 }, { opacity: 1, offset: 0.22 }, { opacity: 0 }], { duration: 500 }, 'on');
   }
@@ -6540,7 +6906,7 @@ var UI = (function () {
     renderShop: renderShop, renderBook: renderBook, showHUD: showHUD, updateHUD: updateHUD,
     minimap: minimap, openBattle: openBattle, renderQuiz: renderQuiz, renderSpell: renderSpell,
     markAnswer: markAnswer, updateBattleHP: updateBattleHP, closeBattle: closeBattle,
-    pressChoice: pressChoice, showResult: showResult, toast: toast, banner: banner, flashRed: flashRed,
+    pressChoice: pressChoice, showResult: showResult, toast: toast, banner: banner, flashRed: flashRed, bsod: bsod, ultGrade: ultGrade,
     screenFlash: screenFlash, showCombo: showCombo, hideCombo: hideCombo, openSettings: openSettings, renderSettings: renderSettings,
     openPause: openPause, closePause: closePause, isPauseOpen: isPauseOpen, fadeThen: fadeThen
   };
@@ -6619,6 +6985,76 @@ var Game = (function () {
     FX.resize(window.innerHeight * renderer.getPixelRatio(), camera.fov);
   }
 
+  // ---------- 화면 글리치 (치명적 오류) ----------
+  // three.js examples 의 DigitalGlitch 셰이더 + GlitchPass 무작위화 (MIT, staffantan/unityglitch 기반).
+  // 평소엔 비용 0: 글리치가 걸린 짧은 순간에만 장면을 절반 해상도 버퍼에 그린 뒤 RGB 분리 · 띠 어긋남 · 노이즈로 깨뜨려 화면에 옮긴다
+  var gq = null, glitchUntil = 0, glitchWildUntil = 0;
+  function glitchInit() {
+    if (gq) return gq;
+    var n = 64, data = new Uint8Array(n * n);
+    for (var i = 0; i < data.length; i++) data[i] = (Math.random() * 256) | 0;
+    var disp = new THREE.DataTexture(data, n, n, renderer.capabilities.isWebGL2 ? THREE.RedFormat : THREE.LuminanceFormat);
+    disp.needsUpdate = true;
+    var u = { tDiffuse: { value: null }, tDisp: { value: disp }, amount: { value: 0.08 }, angle: { value: 0.02 }, seed: { value: 0.02 },
+      seed_x: { value: 0.02 }, seed_y: { value: 0.02 }, distortion_x: { value: 0.5 }, distortion_y: { value: 0.6 }, col_s: { value: 0.05 } };
+    var mat = new THREE.ShaderMaterial({ uniforms: u, depthTest: false, depthWrite: false,
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+      fragmentShader: [
+        'uniform sampler2D tDiffuse; uniform sampler2D tDisp; uniform float amount, angle, seed, seed_x, seed_y, distortion_x, distortion_y, col_s; varying vec2 vUv;',
+        'float rand(vec2 co){ return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }',
+        'void main(){ vec2 p = vUv; float xs = floor(gl_FragCoord.x / 0.5), ys = floor(gl_FragCoord.y / 0.5);',
+        '  float disp = texture2D(tDisp, p * seed * seed).r;',
+        '  if (p.y < distortion_x + col_s && p.y > distortion_x - col_s * seed) { if (seed_x > 0.) p.y = 1. - (p.y + distortion_y); else p.y = distortion_y; }',
+        '  if (p.x < distortion_y + col_s && p.x > distortion_y - col_s * seed) { if (seed_y > 0.) p.x = distortion_x; else p.x = 1. - (p.x + distortion_x); }',
+        '  p.x += disp * seed_x * (seed / 5.); p.y += disp * seed_y * (seed / 5.);',
+        '  vec2 off = amount * vec2(cos(angle), sin(angle));',
+        '  vec4 cr = texture2D(tDiffuse, p + off), cga = texture2D(tDiffuse, p), cb = texture2D(tDiffuse, p - off);',
+        '  gl_FragColor = vec4(cr.r, cga.g, cb.b, 1.0) + vec4(vec3(50. * amount * rand(vec2(xs * seed, ys * seed * 50.)) * 0.2), 0.0); }'   // 노이즈는 원본(200)보다 약하게
+      ].join('\n') });
+    var quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat); quad.frustumCulled = false;
+    gq = { u: u, scene: new THREE.Scene(), cam: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), rt: null, size: new THREE.Vector2() };
+    gq.scene.add(quad);
+    return gq;
+  }
+  // dur 초 동안 화면을 깨뜨림. wild: 매 프레임 크게 (GlitchPass goWild), 아니면 잔잔하게. '화면 흔들림' 설정을 끄면 쓰지 않는다 (깜빡임 민감 대비)
+  function glitchBurst(dur, wild) {
+    if (!save.shake || !renderer) return;
+    var now = performance.now();
+    glitchUntil = Math.max(glitchUntil, now + dur * 1000);
+    if (wild) glitchWildUntil = Math.max(glitchWildUntil, now + dur * 1000);
+  }
+  function glitchTarget(g) {                                    // 화면의 절반 해상도 버퍼 (최근접 확대 → 픽셀이 깍두기처럼)
+    renderer.getDrawingBufferSize(g.size);
+    var w = Math.max(1, (g.size.x / 2) | 0), hgt = Math.max(1, (g.size.y / 2) | 0);
+    if (!g.rt) g.rt = new THREE.WebGLRenderTarget(w, hgt, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+    else if (g.rt.width !== w || g.rt.height !== hgt) g.rt.setSize(w, hgt);
+    return g.rt;
+  }
+  function glitchWarm() {                                       // 셰이더 컴파일 + 버퍼 할당을 미리 (첫 글리치 순간 끊기지 않게)
+    var g = glitchInit();
+    try { renderer.compile(g.scene, g.cam); renderer.setRenderTarget(glitchTarget(g)); } catch (e) { }
+    renderer.setRenderTarget(null);
+  }
+  function renderMain(scene) {
+    var now = performance.now();
+    if (now >= glitchUntil) { renderer.render(scene, camera); return; }
+    var g = glitchInit(), u = g.u, R = Math.random, hgt = glitchTarget(g).height;
+    u.seed.value = R();
+    if (now < glitchWildUntil) {                                // GlitchPass goWild: 크게 깨지는 프레임
+      u.amount.value = R() / 30; u.seed_x.value = R() * 2 - 1; u.seed_y.value = R() * 2 - 1;
+    } else {                                                    // 잔잔한 프레임
+      u.amount.value = R() / 90; u.seed_x.value = (R() * 2 - 1) * 0.3; u.seed_y.value = (R() * 2 - 1) * 0.3;
+    }
+    u.angle.value = (R() * 2 - 1) * Math.PI; u.distortion_x.value = R(); u.distortion_y.value = R();
+    FX.resize(hgt, camera.fov);                                 // 파티클 크기를 절반 해상도에 맞춤
+    renderer.setRenderTarget(g.rt);
+    renderer.render(scene, camera);
+    renderer.setRenderTarget(null);
+    applyPointScale();
+    u.tDiffuse.value = g.rt.texture;
+    renderer.render(g.scene, g.cam);
+  }
+
   // ---------- 초기화 ----------
   function init(container) {
     storage = safeStorage();
@@ -6635,6 +7071,8 @@ var Game = (function () {
     FX.init();
     FX.hooks.shake = function (a) { addShake(a); };
     FX.hooks.screenFlash = function (c, a) { UI.screenFlash(c, a); };
+    FX.hooks.glitch = glitchBurst;
+    SFX.hooks.onGlitch = function (dur) { if (musicStyle() === 'glitch' && state !== 'result') glitchBurst(Math.min(0.12, dur), false); };   // 배경음의 오류(끊김·되감기)에 맞춰 화면도 살짝
     resolveQuality();
 
     // 로비 씬
@@ -6677,6 +7115,7 @@ var Game = (function () {
       if (wp.off && !wp.off.parent) tmp.add(wp.off);
     });
     sceneLobby.add(tmp);
+    glitchWarm();                                                    // 화면 글리치 셰이더도 미리
     FX.prewarm(renderer, camera);
     while (tmp.children.length) tmp.remove(tmp.children[0]);
     sceneLobby.remove(tmp);
@@ -6695,15 +7134,15 @@ var Game = (function () {
     state = s;
     UI.onState(s);
     if (run && run.monsters && (s === 'dungeon' || s === 'battle')) refreshUltUI(true);
-    if (s === 'start' || s === 'lobby' || s === 'shop' || s === 'book' || s === 'study') {
-      FX.setScene(sceneLobby);
-      SFX.setMusic('lobby');
-    } else if (s === 'dungeon' || s === 'battle') {
-      SFX.setMusic('dungeon', run ? run.id : 0);
-    } else if (s === 'result') {
-      SFX.setMusic(null);
-    }
+    if (s === 'start' || s === 'lobby' || s === 'shop' || s === 'book' || s === 'study') FX.setScene(sceneLobby);
+    syncMusic();
   }
+  // 배경음: 장소(로비/던전)는 상태가, 분위기는 주인공이 쥔 무기가 정한다 ('치명적 오류'를 쥐면 에러 배경음)
+  function heldWeapon() { return (run && run.weapon && (state === 'dungeon' || state === 'battle')) ? run.weapon : lobbyWeapon; }
+  function musicStyle() { var wp = heldWeapon(); return wp && wp.def.glitch ? 'glitch' : ''; }
+  function musicMode() { return state === 'dungeon' || state === 'battle' ? 'dungeon' : state === 'result' || state === 'boot' ? null : 'lobby'; }
+  function musicSeed() { return musicMode() === 'dungeon' && run ? run.id : 0; }      // 던전마다 으뜸음이 다름 (로비는 늘 같게)
+  function syncMusic() { SFX.setMusic(musicMode(), musicSeed(), musicStyle()); }
 
   // ---------- 로비/무기고 ----------
   function equipLobby(id) {
@@ -6711,6 +7150,7 @@ var Game = (function () {
     var E = lobbyWeapon.E;
     lobbyTrail.setColors(E.c1, E.c2, lobbyWeapon.prism);
     lobbyTrail.clear();
+    if (musicMode() === 'lobby') syncMusic();                  // 무기고에서 쥐어 보기만 해도 배경음이 바뀐다
   }
   function toLobby() {
     if (run) disposeRun();
@@ -6843,6 +7283,7 @@ var Game = (function () {
     camera.position.copy(camPos); camera.lookAt(camLook);
     // 입장 순간(암전 중)에 ① 모든 이펙트 셰이더 컴파일 ② 맵 전체를 위에서 한 번 그려 모델·이름표 텍스처까지 GPU 에 업로드
     // → 탐험 중 새 몬스터가 처음 보일 때, 첫 타격 때 끊기지 않는다
+    if (weapon.def.glitch) glitchWarm();                     // (예열 렌더보다 먼저: 셰이더 링크 확인이 쌓인 GPU 작업을 기다리지 않게)
     FX.prewarm(renderer, camera, function () { warmRender(sceneDungeon, grid); });
     setState('dungeon');
     UI.showHUD(run, save);
@@ -6900,6 +7341,7 @@ var Game = (function () {
     clearDungeonScene();
     floats.forEach(function (f) { f.el.remove(); }); floats = [];
     if (ult) SFX.musicDuck(false);
+    UI.bsod(null); UI.ultGrade(null); glitchUntil = glitchWildUntil = 0;
     run = null; battle = null; atk = null; ult = null;
     slowMo = 0; hitStop = 0; camRoll = 0; camKick.set(0, 0, 0);
     if (fovKick) { fovKick = 0; camera.fov = baseFov; camera.updateProjectionMatrix(); }
@@ -7018,6 +7460,7 @@ var Game = (function () {
         else { var r = (k - 0.4) / 0.6; h.armR.rotation.x = lerp(0.35, -0.25, ease(r)); h.armR.rotation.z = lerp(1.0, 0, ease(r)); h.body.rotation.y = lerp(-0.8, 0, ease(r)); }
       },
       fx: function (a) {
+        if (a.el === 'error') { FX.glitchSlash(a.origin, a.dir); return; }     // 치명적 오류: 색수차 베기
         FX.slashArc(a.origin, a.dir, { el: a.el, tilt: -0.08, radius: 2.3, y: 1.15, geo: 'crescentThin', spinFrom: 1.7, spinTo: -1.6, life: 0.3, prism: a.prism });
         FX.slashArc(a.origin, a.dir, { el: a.el, tilt: 0.12, radius: 2.1, y: 1.3, geo: 'crescentThin', spinFrom: -1.5, spinTo: 1.5, life: 0.26, delay: 0.06, sparks: 4, prism: a.prism });
       }
@@ -7159,7 +7602,7 @@ var Game = (function () {
     else nv.set(0, Math.min(1, (k - 0.74) / 0.24));
   }
   function atkOf(wp) { return wp.def.blackhole ? ATTACKS.blackhole : (ATTACKS[wp.type] || ATTACKS.sword); }  // 무기별 공격 안무 (가이아 BH3 는 전용)
-  function sndOf(wp) { return wp.def.blackhole ? 'blackhole' : wp.type; }                                    // 휘두름·발사 소리 키
+  function sndOf(wp) { return wp.def.blackhole ? 'blackhole' : wp.def.glitch ? 'glitch' : wp.type; }         // 휘두름·발사 소리 키
   function mkind(wp) { return wp.def.comet ? 'comet' : 'fire'; }                                              // 운석 팔레트 (용의 숨결 / 혜성)
   function summonSfx(wp) { if (wp.def.comet) SFX.cometCall(); else SFX.meteorSummon(); }                     // 부르는 소리 (용의 포효 / 얼음 종소리)
   function easeOutBack(k) { var c = 1.7; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); }
@@ -7182,6 +7625,7 @@ var Game = (function () {
       swung: false, fired: false, hitDone: false, swingIdx: 0, charged: false
     };
     run.hero.g.rotation.y = Math.atan2(dir.x, dir.z);
+    if (w.glitch) w.glitch.burst(def.dur);                  // 휘두르는 동안 칼이 깨져 보임
   }
   function doHit(mo) {
     if (!run || !mo) return;
@@ -7418,6 +7862,13 @@ var Game = (function () {
         FX.meteor(meteorSky(tg, 0.25), tg, { dur: 0.5, size: 0.85, kind: lk,
           onArrive: function (p) { FX.meteorImpact(p, { ground: new THREE.Vector3(p.x, 0, p.z), power: 0.8, lite: true, kind: lk }); SFX.meteorImpact(0, false); if (lk === 'comet') SFX.cometShatter(0, false); } });
       }
+      if (lobbyWeapon.glitch && !lobbyNova.fired && k >= def.hit) {          // 치명적 오류: 색수차 베기 → 옆에 오류 타격
+        lobbyNova.fired = true; lobbyWeapon.glitch.burst(0.5);
+        var gt = lobbyTarget(h), gd = TMP3.set(gt.x - h.g.position.x, 0, gt.z - h.g.position.z).normalize();
+        FX.glitchSlash(TMP2.set(h.g.position.x, 1.15, h.g.position.z), gd);
+        FX.impact('error', gt.setY(1.0), { dir: gd.clone(), ground: new THREE.Vector3(gt.x, 0, gt.z), power: 0.8, radius: 0.5, lite: true });
+        SFX.impact('error', false);
+      }
       if (lobbyWeapon.type === 'axe') h.g.rotation.y = Math.PI + (k > 0.3 && k < 0.58 ? (k - 0.3) / 0.28 * Math.PI * 2 : (k >= 0.58 ? Math.PI * 2 : 0));
       var tr = def.trail || [0.2, 0.5];
       if (k > tr[0] && k < tr[1]) {
@@ -7450,7 +7901,7 @@ var Game = (function () {
     camera.position.copy(camPos);
     camera.lookAt(camLook);
     FX.update(dt);
-    renderer.render(sceneLobby, camera);
+    renderMain(sceneLobby);
   }
   var lobbyShowoffSwung = false, lobbyNova = { charged: false, fired: false };
   function lobbyTarget(h) {                                  // 상점 패널에 가리지 않는 영웅 오른쪽 뒤편 (카메라 기준)
@@ -7627,7 +8078,7 @@ var Game = (function () {
     FX.update(dt);
     var hs = Math.floor(t * 6);
     if (hs !== lastMini) { lastMini = hs; UI.minimap(run); refreshUltUI(false); }
-    renderer.render(sceneDungeon, camera);
+    renderMain(sceneDungeon);
   }
 
   function updateAttack(dt) {
@@ -7862,6 +8313,7 @@ var Game = (function () {
     if (w.el === 'nova') { startNovaUlt(targets, immune); return; }
     if (w.bh) { startBHUlt(targets, immune); return; }
     if (w.def.comet) { startCometUlt(targets, immune); return; }
+    if (w.def.glitch) { startBsodUlt(targets, immune); return; }
     var hitAt = targets.map(function (m, i) { return 0.8 + i * 0.1; });
     ult = { t: 0, targets: targets, immune: immune, hitAt: hitAt, struck: 0, slammed: false, el: w.el, E: E,
       name: w.def.ultName || ULT_NAMES[w.el] || '궁극기', lv0: levelFromExp(save.exp).level, endAt: 0.8 + targets.length * 0.1 + 0.8,
@@ -8168,6 +8620,86 @@ var Game = (function () {
       reactMonster(mo, d.normalize(), 1.2);
     });
   }
+  // ---------- 치명적 오류 전용 궁극기: 블루스크린 ----------
+  // 한 방으로 단순하게: 대상마다 에러 창이 뜨며 과부하 → 화면 전체가 블루스크린으로 멈춤(0→100%) → 화면이 찢어지며 돌아오면
+  // 대상이 '텍스처 없음' 상자로 굳었다가 픽셀로 흩어져 한꺼번에 삭제 → 삭제 수에 따라 화려한 평가 (WARNING → FATAL ERROR / B → SSS)
+  var BSOD_ULT = { lock0: 0.12, crash: 1.0, back: 1.9, del0: 2.1, gap: 0.07 };
+  var BSOD_GRADES = [{ n: 5, rank: 'SSS', title: 'FATAL ERROR', cls: 'g-sss' }, { n: 3, rank: 'S', title: 'CRITICAL ERROR', cls: 'g-s' },
+    { n: 2, rank: 'A', title: 'ERROR', cls: 'g-a' }, { n: 1, rank: 'B', title: 'WARNING', cls: 'g-b' }, { n: 0, rank: '?', title: '404 NOT FOUND', cls: 'g-n' }];
+  var BSOD_PCT = [0, 0, 17, 38, 38, 64, 91, 100];                    // 진행률은 실제처럼 들쭉날쭉하게 뛴다
+  function startBsodUlt(targets, immune) {
+    var p = run.player, w = run.weapon, B = BSOD_ULT, n = targets.length;
+    ult = { t: 0, bsod: true, targets: targets, immune: immune, struck: 0, locked: 0, deleted: 0, el: w.el, E: w.E, pending: targets.slice(),
+      lockGap: Math.min(0.12, 0.7 / Math.max(1, n)), delAt: targets.map(function (m, i) { return B.del0 + i * B.gap; }),
+      gradeAt: B.del0 + n * B.gap + 0.25, name: w.def.ultName, lv0: levelFromExp(save.exp).level, nextG: 0.3 };
+    ult.endAt = ult.gradeAt + 1.1;
+    setState('dungeon');
+    UI.ultCast(true, ult.name);
+    buzz([15, 40, 15]);
+    SFX.errorCharge(B.crash);
+    FX.decal(FX.tex.checkerFine, 0xffffff, new THREE.Vector3(p.x, 0, p.z), BAL.ult.radius * 1.05, B.back, { normal: true, opacity: 0.35, grow: true, growSpeed: 1.6, hold: 0.85, rot: 0 });
+    if (w.glitch) w.glitch.burst(ult.endAt);
+  }
+  function updateBsodUlt() {
+    var u = ult, h = run.hero, t = u.t, B = BSOD_ULT;
+    // 주인공: 칼을 치켜들고 떨며 오류를 퍼뜨림 → (멈춘 화면) → 화면이 돌아오는 순간 내리그음 → 마무리
+    var lift = Math.min(1, t / 0.35), cut = t > B.back - 0.05 ? Math.min(1, (t - (B.back - 0.05)) / 0.14) : 0, rest = t > u.endAt - 0.5 ? Math.min(1, (t - (u.endAt - 0.5)) / 0.4) : 0;
+    var tremble = t < B.crash ? (Math.random() - 0.5) * 0.12 * lift : 0;
+    h.armR.rotation.x = lerp(lerp(lerp(-0.25, -2.7, lift) + tremble, 1.15, cut), -0.25, rest);
+    h.armL.rotation.x = lerp(lerp(lerp(0, -0.6, lift), 0.4, cut), 0, rest);
+    h.armR.rotation.z = lerp(-0.25 * lift * (1 - cut), 0, rest);
+    h.body.rotation.x = lerp(lerp(-0.12 * lift, 0.25, cut), 0, rest);
+    for (var ci = 0; ci < h.cape.length; ci++) h.cape[ci].rotation.x = 0.5 + Math.sin(t * 12 - ci) * 0.2;
+    while (u.locked < u.targets.length && t >= B.lock0 + u.locked * u.lockGap) { bsodLock(u.targets[u.locked], u.locked); u.locked++; }
+    if (t < B.crash) {                                            // 과부하: 점점 잦아지는 글리치와 떨림
+      addShake(0.04 + 0.12 * t / B.crash);
+      if (t >= u.nextG) { glitchBurst(0.05 + 0.1 * t / B.crash, t > B.crash - 0.25); u.nextG = t + 0.22 - 0.16 * t / B.crash; }
+    }
+    if (!u.crashed && t >= B.crash) {                             // 멈춤: 화면 전체가 블루스크린, 소리가 뚝 끊김
+      u.crashed = true;
+      UI.bsod(0); SFX.bsodCrash(B.back - B.crash); SFX.musicDuck(true, 0); buzz([70]);
+    }
+    if (u.crashed && !u.back) UI.bsod(BSOD_PCT[Math.min(BSOD_PCT.length - 1, Math.floor(clamp01((t - B.crash) / (B.back - B.crash - 0.1)) * (BSOD_PCT.length - 1)))]);
+    if (!u.back && t >= B.back) {                                 // 복귀: 블루스크린이 찢어지며 사라지고 내리그음
+      u.back = true;
+      UI.bsod(-1); SFX.bsodBack(); SFX.musicDuck(true);
+      glitchBurst(0.35, true); addShake(0.9); buzz([30, 20, 40]);
+      kickCamera(TMP2.set(0, 0, 1), 1, true);
+      ultImmune(u);
+    }
+    while (u.struck < u.targets.length && t >= u.delAt[u.struck]) { bsodDelete(u.targets[u.struck], u.struck); u.struck++; }
+    if (!u.graded && t >= u.gradeAt) { u.graded = true; bsodGrade(u); }
+    if (t >= u.endAt) finishUlt();
+  }
+  function bsodLock(mo, i) {                                    // 대상 잠금: 머리 위에 에러 창 + 발밑에 어긋난 고리
+    if (!mo.plan.alive) return;
+    var gp = new THREE.Vector3(mo.g.position.x, 0, mo.g.position.z);
+    FX.errPopup(new THREE.Vector3(gp.x, mo.h + 1.3, gp.z), { word: i ? undefined : 0, size: 2, life: BSOD_ULT.crash - BSOD_ULT.lock0 - i * ult.lockGap + 0.05 });
+    FX.shockRing(gp, i % 2 ? 0x20fff0 : 0xff2050, 1.6, 0.3, 0.35, { thin: true });
+    mo.flash = 1;
+  }
+  function bsodDelete(mo, i) {                                  // 삭제: 몸이 곧바로 사라지고 그 자리에 체커 상자 → 픽셀로 흩어짐
+    var u = ult, k = u.pending.indexOf(mo);
+    if (k >= 0) u.pending.splice(k, 1);
+    if (!run || !mo.plan.alive) return;
+    var P = new THREE.Vector3(mo.g.position.x, mo.h * 0.5, mo.g.position.z);
+    FX.glitchDelete(P, new THREE.Vector3(P.x, 0, P.z), 0.5 * mo.scale + 0.2, i);
+    SFX.deleteBlip(i);
+    for (var j = monsterFx.length - 1; j >= 0; j--) if (monsterFx[j].mo === mo) monsterFx.splice(j, 1);
+    ultKill(mo, true);
+    mo.deathDelay = 0; mo.deadT = 0.54; mo.g.visible = false;     // 다음 프레임에 장면에서 제거
+    u.deleted++;
+    addShake(0.25); buzz(10); glitchBurst(0.05, false);
+    if (i === u.targets.length - 1) slowMo = 0.25;
+  }
+  function bsodGrade(u) {                                       // 평가: 삭제 수 → 등급 (도장 + 글리치 글자 + 팡파르)
+    var n = u.deleted, gi = 0;
+    while (BSOD_GRADES[gi].n > n) gi++;
+    var g = BSOD_GRADES[gi];
+    UI.ultGrade({ rank: g.rank, title: g.title, cls: g.cls, sub: n ? '몬스터 ' + n + '마리 삭제 · +' + n * BAL.gold.normal + 'G' : '삭제할 몬스터를 찾지 못함' });
+    SFX.gradeFanfare(BSOD_GRADES.length - 1 - gi);
+    if (n) { UI.screenFlash(['#ff2bd6', '#ff2bd6', '#ff5a3a', '#ffd23e'][gi], 0.3); glitchBurst(0.2, true); addShake(0.5 + 0.15 * (3 - gi)); buzz([20, 30, 50]); }
+  }
   function ultImmune(u) {                                     // 범위 안 보스·히든은 튕겨냄: "면역"
     u.immune.forEach(function (mo) {
       if (!mo.plan.alive) return;
@@ -8183,6 +8715,7 @@ var Game = (function () {
     if (u.nova) { updateNovaUlt(); return; }
     if (u.bh) { updateBHUlt(); return; }
     if (u.comet) { updateCometUlt(); return; }
+    if (u.bsod) { updateBsodUlt(); return; }
     var t = u.t;
     if (t < 0.62) {                               // 회전하며 도약, 무기를 치켜듦
       var k = t / 0.62, e = 1 - (1 - k) * (1 - k);
@@ -8236,7 +8769,7 @@ var Game = (function () {
     if (i === u.targets.length - 1) slowMo = 0.35;
     ultKill(mo);
   }
-  function ultKill(mo) {
+  function ultKill(mo, quiet) {                                // quiet: 처치 폭발 없이 (블루스크린 삭제는 자체 연출)
     mo.plan.alive = false; mo.plan.ult = true;
     mo.deadT = 0; mo.deathDelay = 0.14;
     run.remaining--; run.ultKills++;
@@ -8244,7 +8777,7 @@ var Game = (function () {
     var g = BAL.gold.normal, e = BAL.exp.normal;
     run.goldEarned += g; run.expEarned += e; save.gold += g; save.exp += e;
     TMP.set(mo.g.position.x, mo.h * 0.5, mo.g.position.z);
-    FX.deathBurst(TMP.clone(), run.d.accent, false);
+    if (!quiet) FX.deathBurst(TMP.clone(), run.d.accent, false);
     FX.lootOrbs(TMP.clone(), run.hero.g, 4, [0xffd23e, 0xfff0a0], function () { SFX.pickup(); });
     addFloat(mo.g.position, mo.h + 0.5, '+' + g + 'G', '#ffd23e', 'gold');
   }
@@ -8257,18 +8790,19 @@ var Game = (function () {
     if (run.weapon.bh) run.weapon.bh.set(0, 1);
     var h = run.hero;
     h.g.position.y = 0; h.armR.rotation.set(-0.25, 0, 0); h.armL.rotation.set(0, 0, 0);
+    if (u.bsod) { h.body.rotation.set(0, 0, 0); UI.bsod(null); }
     UI.ultCast(false);
     battleCooldown = 1.2;
     persistSave(storage, save);
     UI.updateHUD(run, save);
-    UI.toast('⚡ ' + u.name + ' — ' + u.struck + '마리 처치!', 2200);
+    if (!u.bsod) UI.toast('⚡ ' + u.name + ' — ' + u.struck + '마리 처치!', 2200);   // 블루스크린은 평가 화면이 대신 알림
     var lv1 = levelFromExp(save.exp).level;
     if (lv1 > u.lv0) {
       run.player.maxHP = maxHPForLevel(lv1); run.player.hp = run.player.maxHP;
       SFX.levelup(); FX.levelUp(run.hero.g.position); UI.banner('LEVEL UP!  Lv.' + lv1); UI.updateHUD(run, save);
     }
     refreshUltUI(true);
-    if (run.remaining <= 0) setTimeout(finishRun, 500);
+    if (run.remaining <= 0) setTimeout(function () { if (run) finishRun(); }, u.bsod ? 1300 : 500);   // 블루스크린은 평가를 다 보여준 뒤 결과 화면으로
   }
   function refreshUltUI(force) {
     if (!run || !run.monsters) return;
@@ -8314,13 +8848,13 @@ var Game = (function () {
   function toggleSound() {
     save.sound = !save.sound;
     persistSave(storage, save);
-    SFX.refreshMusic(save.sound && save.music ? (run && (state === 'dungeon' || state === 'battle') ? 'dungeon' : 'lobby') : null, run ? run.id : 0);
+    SFX.refreshMusic(save.sound && save.music ? musicMode() : null, musicSeed(), musicStyle());
     return save.sound;
   }
   function toggleMusic() {
     save.music = !save.music;
     persistSave(storage, save);
-    SFX.refreshMusic(save.sound && save.music ? (run && (state === 'dungeon' || state === 'battle') ? 'dungeon' : 'lobby') : null, run ? run.id : 0);
+    SFX.refreshMusic(save.sound && save.music ? musicMode() : null, musicSeed(), musicStyle());
     return save.music;
   }
   function toggleShake() { save.shake = !save.shake; persistSave(storage, save); return save.shake; }
