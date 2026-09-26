@@ -6075,6 +6075,10 @@ function buildDungeonScene(scene, grid, d, rng, Q) {
       col[i * 3] = v; col[i * 3 + 1] = v; col[i * 3 + 2] = v;
     }
     wallGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    // 최적화: 밑면(-y, 인덱스 18~23)은 바닥에 묻혀 절대 안 보임 → 벽 삼각형 1/6 절감
+    var ix = wallGeo.index.array, keep = [];
+    for (var k = 0; k < ix.length; k++) if (k < 18 || k >= 24) keep.push(ix[k]);
+    wallGeo.setIndex(keep); wallGeo.clearGroups();
   })();
   var wallMat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: true });
   var wallMesh = new THREE.InstancedMesh(wallGeo, wallMat, wallTiles.length);
@@ -6090,15 +6094,22 @@ function buildDungeonScene(scene, grid, d, rng, Q) {
   g.add(wallMesh);
 
   // ---- 바닥 (체커 2색 + 미세 변주) ----
-  var floorGeo = new THREE.BoxGeometry(TILE, 0.12, TILE);
-  var floorMesh = new THREE.InstancedMesh(floorGeo, new THREE.MeshLambertMaterial({ color: 0xffffff }), floorTiles.length);
+  // 최적화: 타일마다 상자(삼각형 12개)였으나 옆·밑면은 늘 가려짐 → 보이는 윗면 사각형만 한 메시로 (바닥 삼각형 83% 절감, 드로우콜 동일)
+  var fN = floorTiles.length, fPos = new Float32Array(fN * 12), fNor = new Float32Array(fN * 12), fCol = new Float32Array(fN * 12), fIdx = [], hT = TILE / 2;
   floorTiles.forEach(function (t, i) {
-    var w = tileToWorld(grid, t[0], t[1]);
-    dummy.position.set(w.x, -0.06, w.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1);
-    dummy.updateMatrix(); floorMesh.setMatrixAt(i, dummy.matrix);
+    var w = tileToWorld(grid, t[0], t[1]), o = i * 12, v = i * 4;
     var base = (t[0] + t[1]) % 2 ? 1.05 : 0.86;
-    floorMesh.setColorAt(i, col.copy(floorC).multiplyScalar(base * (0.94 + ((t[0] * 13 + t[1] * 29) % 5) * 0.03)));
+    col.copy(floorC).multiplyScalar(base * (0.94 + ((t[0] * 13 + t[1] * 29) % 5) * 0.03));
+    fPos.set([w.x - hT, 0, w.z - hT, w.x - hT, 0, w.z + hT, w.x + hT, 0, w.z + hT, w.x + hT, 0, w.z - hT], o);
+    for (var q = 0; q < 4; q++) { fNor[o + q * 3 + 1] = 1; fCol[o + q * 3] = col.r; fCol[o + q * 3 + 1] = col.g; fCol[o + q * 3 + 2] = col.b; }
+    fIdx.push(v, v + 1, v + 2, v, v + 2, v + 3);
   });
+  var floorGeo = new THREE.BufferGeometry();
+  floorGeo.setAttribute('position', new THREE.BufferAttribute(fPos, 3));
+  floorGeo.setAttribute('normal', new THREE.BufferAttribute(fNor, 3));
+  floorGeo.setAttribute('color', new THREE.BufferAttribute(fCol, 3));
+  floorGeo.setIndex(fIdx);
+  var floorMesh = new THREE.Mesh(floorGeo, new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: true }));
   floorMesh.receiveShadow = true;
   g.add(floorMesh);
 
@@ -6185,10 +6196,11 @@ function buildDungeonScene(scene, grid, d, rng, Q) {
   var cfg = THEME_AIR[d.theme] || THEME_AIR.skeleton;
   var airN = Math.round((cfg.n || 50) * (Q.air === undefined ? 1 : Q.air));
   if (airN > 0) {
-    var pos = new Float32Array(airN * 3), data = [];
+    var pos = new Float32Array(airN * 3), data = new Float32Array(airN * 2);   // 위치는 버퍼에 바로, [위상, 속도]만 따로
     var W = grid.cols * TILE, H = grid.rows * TILE;
     for (var i = 0; i < airN; i++) {
-      data.push({ x: (Math.random() - 0.5) * W, y: Math.random() * 4.2, z: (Math.random() - 0.5) * H, ph: Math.random() * 6.28, sp: 0.4 + Math.random() * 1.1 });
+      pos[i * 3] = (Math.random() - 0.5) * W; pos[i * 3 + 1] = Math.random() * 4.2; pos[i * 3 + 2] = (Math.random() - 0.5) * H;
+      data[i * 2] = Math.random() * 6.28; data[i * 2 + 1] = 0.4 + Math.random() * 1.1;
     }
     var ag = new THREE.BufferGeometry();
     ag.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
@@ -6239,26 +6251,26 @@ function buildDungeonScene(scene, grid, d, rng, Q) {
       for (var q = 0; q < gateHalos.length; q++) gateHalos[q].material.opacity = 0.4 + Math.sin(t * 3 + q) * 0.12;
       pad.material.opacity = 0.32 + Math.sin(t * 2.4) * 0.12;
       if (air) {
-        var a = air, D = a.data, P = a.pos;
-        for (var j2 = 0; j2 < D.length; j2++) {
-          var p = D[j2];
+        var a = air, D = a.data, P = a.pos, AN = D.length / 2;
+        for (var j2 = 0; j2 < AN; j2++) {
+          var j3 = j2 * 3, ph = D[j2 * 2], sp = D[j2 * 2 + 1], x = P[j3], y = P[j3 + 1], z = P[j3 + 2];
           if (a.kind === 2 || a.kind === 5) {
-            p.y += dt * p.sp * (a.kind === 5 ? 0.5 : 0.8);
-            p.x += Math.sin(t * 1.4 + p.ph) * dt * 0.3;
-            if (p.y > 4.4) { p.y = 0.1; p.x = px + (Math.random() - 0.5) * 20; p.z = pz + (Math.random() - 0.5) * 20; }
+            y += dt * sp * (a.kind === 5 ? 0.5 : 0.8);
+            x += Math.sin(t * 1.4 + ph) * dt * 0.3;
+            if (y > 4.4) { y = 0.1; x = px + (Math.random() - 0.5) * 20; z = pz + (Math.random() - 0.5) * 20; }
           } else if (a.kind === 3) {
-            p.y -= dt * p.sp * 0.55;
-            p.x += Math.sin(t * 0.8 + p.ph) * dt * 0.5;
-            if (p.y < 0.05) { p.y = 4.4; p.x = px + (Math.random() - 0.5) * 20; p.z = pz + (Math.random() - 0.5) * 20; }
+            y -= dt * sp * 0.55;
+            x += Math.sin(t * 0.8 + ph) * dt * 0.5;
+            if (y < 0.05) { y = 4.4; x = px + (Math.random() - 0.5) * 20; z = pz + (Math.random() - 0.5) * 20; }
           } else {
-            p.y += Math.sin(t * 0.7 + p.ph) * dt * 0.35;
-            p.x += Math.cos(t * 0.5 + p.ph) * dt * 0.4;
-            p.z += Math.sin(t * 0.43 + p.ph * 1.3) * dt * 0.4;
+            y += Math.sin(t * 0.7 + ph) * dt * 0.35;
+            x += Math.cos(t * 0.5 + ph) * dt * 0.4;
+            z += Math.sin(t * 0.43 + ph * 1.3) * dt * 0.4;
           }
-          var dx2 = p.x - px, dz2 = p.z - pz;
-          if (dx2 > 11) p.x -= 22; else if (dx2 < -11) p.x += 22;
-          if (dz2 > 11) p.z -= 22; else if (dz2 < -11) p.z += 22;
-          P[j2 * 3] = p.x; P[j2 * 3 + 1] = p.y; P[j2 * 3 + 2] = p.z;
+          var dx2 = x - px, dz2 = z - pz;
+          if (dx2 > 11) x -= 22; else if (dx2 < -11) x += 22;
+          if (dz2 > 11) z -= 22; else if (dz2 < -11) z += 22;
+          P[j3] = x; P[j3 + 1] = y; P[j3 + 2] = z;
         }
         a.pts.geometry.attributes.position.needsUpdate = true;
       }
@@ -7091,7 +7103,7 @@ var Game = (function () {
   var ult = null, ultRingPulse = 0, lastUltKey = '';                                        // 궁극기
   var Q = { name: 'high', torchLights: 5, air: 1, props: 1, density: 1, pixel: 2 };
   var fpsAcc = 0, fpsFrames = 0, autoDowngraded = false;
-  var paused = false, gameTime = 0, coverAcc = 0;
+  var paused = false, gameTime = 0, coverAcc = 0, lastMoveT = 0;
   var TMP = new THREE.Vector3(), TMP2 = new THREE.Vector3(), TMP3 = new THREE.Vector3();
 
   function lerp(a, b, k) { return a + (b - a) * k; }
@@ -7517,7 +7529,7 @@ var Game = (function () {
   // =================================================================== 전투
   function startBattle(mi) {
     var mo = run.monsters[mi];
-    battle = { mi: mi, qIndex: 0, quiz: null, lock: false, spellMode: false, spellFallback: false };
+    battle = { mi: mi, qIndex: 0, quiz: null, lock: false, spellMode: false, spellFallback: false, t0: gameTime };
     var p = run.player, mg = mo.g.position;
     run.hero.g.rotation.y = Math.atan2(mg.x - p.x, mg.z - p.z);
     p.angle = run.hero.g.rotation.y;
@@ -8006,7 +8018,14 @@ var Game = (function () {
     if (paused) return;                       // 일시정지: 갱신·렌더 모두 멈춤 (마지막 프레임이 배경으로 남음)
     // 화면 대부분이 UI 로 가려진 상태에선 3D 를 초당 15장만 그린다 → 목록 스크롤·카드 넘김이 부드러워짐
     var covered = state === 'study' || state === 'book' || state === 'result';
-    var interval = covered ? 1 / 15 : (touchMode && (state === 'lobby' || state === 'start')) ? 1 / 30 : 0;
+    // 모바일: 전투에서 문제를 읽는 동안 · 던전에서 멈춰 서 있는 동안(움직이는 연출이 하나도 없을 때)은 초당 30장
+    // → 플레이 시간 대부분의 GPU·배터리·발열이 절반 (발열로 인한 성능 저하 예방). 입력·공격·이펙트가 생기는 즉시 원래대로
+    var calm = false;
+    if (touchMode && (state === 'battle' || state === 'dungeon') && !atk && !ult && hitStop <= 0 && slowMo <= 0 && shakeT <= 0 && !monsterFx.length && !floats.length && FX.activeCount === 0) {
+      if (state === 'battle') calm = !!battle && gameTime - battle.t0 > 1;
+      else calm = !(joyVec.x || joyVec.y || keys.w || keys.a || keys.s || keys.d || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) && gameTime - lastMoveT > 0.8;
+    }
+    var interval = covered ? 1 / 15 : (touchMode && (state === 'lobby' || state === 'start')) || calm ? 1 / 30 : 0;
     if (interval) {
       coverAcc += Math.min(dtReal, 0.25);
       if (coverAcc < interval - 0.002) return;
@@ -8145,7 +8164,7 @@ var Game = (function () {
       var L = Math.hypot(mvx, mvz);
       if (L > 1) { mvx /= L; mvz /= L; }
       if (L > 0.01) {
-        moving = true;
+        moving = true; lastMoveT = gameTime;
         tryMove(mvx * BAL.moveSpeed * dt, mvz * BAL.moveSpeed * dt);
         var want = Math.atan2(mvx, mvz);
         p.angle += shortAngle(p.angle, want) * Math.min(1, dt * 12);
