@@ -251,6 +251,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
 .wc-desc { font-size: 11.5px; color: var(--dim); line-height: 1.5; min-height: 34px; word-break: keep-all; }
 .wc-move { font-size: 11.5px; font-weight: 700; color: var(--ec); }
 .wc-dmg { font-size: 12px; font-weight: 700; color: #ff9a8a; }
+.wc-once { font-size: 11px; font-weight: 800; color: #ff5a6a; }
 .wc-dmg span { color: var(--dim2); font-weight: 600; font-size: 10.5px; }
 .wc-btn { margin-top: 5px; }
 
@@ -1114,7 +1115,7 @@ BAL.ult = { max: 100, gain: 20, comboGain: 25, comboAt: 3, radius: 7.5 };
 var ULT_NAMES = {
   steel: '강철 폭풍', gold: '황금 심판', ice: '절대 영도', fire: '홍련 폭발', arcane: '비전 붕괴', poison: '맹독 역병',
   wind: '천공 질풍', thunder: '뇌신 강림', nature: '숲의 분노', moon: '월광 난무', earth: '대지 붕괴', shadow: '암흑 강림',
-  holy: '신성 심판', star: '유성 낙하', nova: 'Ia형 초신성', blackhole: '사건의 지평선', comet: '혜성 충돌', error: '블루스크린'
+  holy: '신성 심판', star: '유성 낙하', nova: 'Ia형 초신성', blackhole: '사건의 지평선', comet: '혜성 충돌', error: '블루스크린', blood: '핏빛 심판'
 };
 
 // 콤보(연속 정답)에 따른 처치 보너스 골드
@@ -1149,7 +1150,8 @@ var WEAPON_TYPES = {
   spear:      { name: '창',     cat: 'pole',  move: '돌진 찌르기' },
   staff:      { name: '지팡이', cat: 'range', move: '마력탄 발사' },
   bow:        { name: '활',     cat: 'range', move: '정조준 사격' },
-  scepter:    { name: '홀',     cat: 'range', move: '별핵 붕괴 → 초신성' }
+  scepter:    { name: '홀',     cat: 'range', move: '별핵 붕괴 → 초신성' },
+  javelin:    { name: '투척 화살', cat: 'range', move: '핏빛 투척' }
 };
 var WEAPON_CATS = [
   { id: 'all',   name: '전체' },
@@ -1177,7 +1179,8 @@ var ELEMENTS = {
   nova:    { name: '초신성', c1: 0xffffff, c2: 0x6fb6ff, glow: 0xffa8dc },
   blackhole: { name: '블랙홀', c1: 0xffe2b0, c2: 0x8a5cff, glow: 0xffa860 },
   comet:   { name: '혜성', c1: 0xf0fbff, c2: 0x4aa8ff, glow: 0x6ec8ff },
-  error:   { name: '오류', c1: 0xffffff, c2: 0xff2bd6, glow: 0x2bffe0 }
+  error:   { name: '오류', c1: 0xffffff, c2: 0xff2bd6, glow: 0x2bffe0 },
+  blood:   { name: '핏빛', c1: 0xffc0c4, c2: 0xb3001b, glow: 0xe8303e }
 };
 // id 0~5 는 기존 저장 데이터와 호환되도록 그대로 유지. 새 무기는 6번부터.
 var WEAPONS = [
@@ -1202,7 +1205,8 @@ var WEAPONS = [
   { id: 18, name: '초신성',         type: 'scepter',    el: 'nova',    stars: 7, price: 7000, desc: '죽어가는 별의 심장을 가둔 홀. 별핵이 붕괴했다가 적 앞에서 초신성으로 폭발한다.' },
   { id: 19, name: '가이아 BH3',     type: 'staff',      el: 'blackhole', stars: 8, price: 9000, desc: '태양 33배, 우리 은하에서 가장 무거운 잠든 블랙홀을 깨운 지팡이. 적을 국수처럼 늘여 삼키고 제트를 뿜는다.', blackhole: true, move: '특이점 사출 → 조석 붕괴', ultName: '사건의 지평선' },
   { id: 20, name: '혜성',           type: 'staff',      el: 'comet',   stars: 7, price: 8000, desc: '얼음 핵에 푸른 이온 꼬리를 단 혜성을 불러내는 지팡이. 청록 코마를 두른 채 떨어져 얼음과 증기를 흩뿌린다.', meteor: true, comet: true, move: '혜성 낙하', ultName: '혜성 충돌' },
-  { id: 21, name: '치명적 오류',     type: 'katana',     el: 'error',   stars: 9, price: 10404, desc: '텍스처를 잃고 깨져 버린 칼. 쥐기만 해도 화면과 배경음이 오류를 일으키고, 벤 자리엔 픽셀 조각과 에러 창이 튄다.', glitch: true, move: '글리치 일섬', ultName: '블루스크린' }
+  { id: 21, name: '치명적 오류',     type: 'katana',     el: 'error',   stars: 9, price: 10404, desc: '텍스처를 잃고 깨져 버린 칼. 쥐기만 해도 화면과 배경음이 오류를 일으키고, 벤 자리엔 픽셀 조각과 에러 창이 튄다.', glitch: true, move: '글리치 일섬', ultName: '블루스크린' },
+  { id: 22, name: '레바테인',       type: 'javelin',    el: 'blood',   stars: 8, price: 10000, once: true, desc: '검붉은 창대에 핏빛 촉을 단 투척 화살. 던지면 어떤 적이든 한 방에 꿰뚫지만, 한 번 던지면 사라진다.', move: '핏빛 투척 · 1회용' }
 ];
 function weaponById(id) { return WEAPONS[id] || WEAPONS[0]; }
 // 상점 진열 순서: 가격 오름차순
@@ -1548,10 +1552,12 @@ var SFX = (function () {
     bow: function () { tone(140, 210, 0.3, 'sawtooth', 0.025, 0, { attack: 0.1 }); },
     scepter: function () { tone(620, 70, 0.55, 'sawtooth', 0.035, 0, { attack: 0.3 }); noise(0.55, 0.06, 0, 'bandpass', 5200, 380, 1.4, 0.35); },   // 별핵 붕괴: 빨려 들어가는 소리
     blackhole: function () { tone(95, 52, 0.5, 'sine', 0.12, 0, { attack: 0.22 }); noise(0.5, 0.07, 0, 'bandpass', 2600, 280, 1.3, 0.35); },      // 공간이 한쪽으로 쏠리는 저음
+    javelin: function () { noise(0.3, 0.12, 0, 'bandpass', 300, 1400, 1.2, 0.2); tone(180, 90, 0.3, 'sine', 0.06, 0, { attack: 0.2 }); },   // 팔을 뒤로 젖혀 힘을 모음
     glitch: function () { for (var i = 0; i < 4; i++) tone(500 + Math.random() * 2600, 0, 0.032, 'square', 0.035, i * 0.028); noise(0.13, 0.14, 0, 'bandpass', 1800, 5200, 2.2, 0.02); }   // 데이터가 새는 삑삑 + 칼바람
   };
   // 발사(원거리)
   var RELEASE = {
+    javelin: function () { noise(0.22, 0.2, 0, 'bandpass', 900, 4200, 1.6, 0.01); tone(260, 90, 0.25, 'sawtooth', 0.06); tone(1180, 1100, 0.3, 'sine', 0.025, 0.02, { vib: 6, vibDepth: 20 }); },   // 공기를 찢는 소리 + 낮은 으르렁
     staff: function () { tone(900, 300, 0.22, 'triangle', 0.09); noise(0.22, 0.09, 0, 'bandpass', 2400, 600, 1.2); },
     bow: function () { tone(330, 110, 0.16, 'triangle', 0.12); noise(0.12, 0.1, 0, 'bandpass', 3000, 1200, 2); },
     scepter: function () { tone(1500, 2800, 0.07, 'square', 0.045); noise(0.14, 0.16, 0, 'highpass', 6500, 3000, 0.8); tone(280, 900, 0.22, 'sine', 0.08); },   // 충격 돌파
@@ -1560,6 +1566,7 @@ var SFX = (function () {
   // ---- 속성별 타격음 (heavy: 0~1 묵직함) ----
   var IMPACT = {
     blackhole: function () { bhCollapse(0, true); },
+    blood: function () { tone(66, 28, 0.7, 'sine', 0.5); noise(0.45, 0.2, 0, 'lowpass', 1400, 90, 0.9, 0.003); for (var i = 0; i < 3; i++) noise(0.05, 0.1, 0.05 + i * 0.07, 'bandpass', 700 - i * 150, 0, 3); tone(110, 104, 0.9, 'sawtooth', 0.05, 0.02, { vib: 5, vibDepth: 3 }); tone(116.5, 110, 0.9, 'sawtooth', 0.04, 0.02); },   // 묵직한 관통 + 튀는 소리 + 반음 부딪는 저음(불길함)
     error: function () { tone(880, 0, 0.06, 'square', 0.05); tone(440, 0, 0.11, 'square', 0.05, 0.065); for (var i = 0; i < 4; i++) noise(0.022, 0.13, i * 0.042, 'bandpass', 1200 + i * 800, 0, 1.4); tone(130, 40, 0.24, 'sawtooth', 0.08); },   // 오류 삑–삑 + 끊기는 치직 + 깨지는 저음
     nova: function () { tone(72, 24, 1.1, 'sine', 0.5); noise(0.9, 0.26, 0, 'lowpass', 2600, 90, 0.7, 0.003); [1320, 1760, 2217, 2637].forEach(function (f, j) { tone(f, f * 0.985, 0.9, 'sine', 0.028, 0.07 + j * 0.05, { vib: 7, vibDepth: 6 }); }); },
     steel: function () { tone(1240, 1180, 0.16, 'square', 0.05); tone(1835, 1790, 0.12, 'triangle', 0.05); noise(0.09, 0.12, 0, 'highpass', 2500); },
@@ -3010,6 +3017,10 @@ var FX = (function () {
       var am = new THREE.MeshBasicMaterial({ color: E.c1 });
       grp.add(new THREE.Mesh(geo.arrowShaft, am)); grp.add(new THREE.Mesh(geo.arrowHead, am));
       var st = mesh(geo.streak, E.c2, { opacity: 0.8 }); st.scale.set(0.07, 0.07, 0.9); st.position.z = -0.5; grp.add(st);
+    } else if (kind === 'lev') {                           // 레바테인: 검붉은 창대 + 핏빛 촉 + 붉은 잔광
+      var lsh = new THREE.Mesh(geo.arrowShaft, new THREE.MeshBasicMaterial({ color: 0x2a0508 })); lsh.scale.set(1.6, 1.6, 1.5); grp.add(lsh);
+      var lhd = new THREE.Mesh(geo.arrowHead, new THREE.MeshBasicMaterial({ color: 0xc0102a })); lhd.scale.set(1.8, 1.8, 1.6); grp.add(lhd);
+      var lst = mesh(geo.streak, 0xb3001b, { opacity: 0.85 }); lst.scale.set(0.09, 0.09, 1.4); lst.position.z = -0.7; grp.add(lst);
     } else if (kind === 'nova') {
       var nc = mesh(geo.sphere, 0xffffff, {}); nc.scale.setScalar(0.12); grp.add(nc);
       var nsh = mesh(geo.sphere, NOVA_BLUE, { opacity: 0.5 }); nsh.scale.setScalar(0.26); grp.add(nsh);
@@ -3022,7 +3033,7 @@ var FX = (function () {
       var sh = mesh(geo.sphere, E.c2, { opacity: 0.6 }); sh.scale.setScalar(r * 1.25); grp.add(sh);
     }
     var halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.dot, color: kind === 'blackhole' ? BH_VIO : E.glow, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
-    var hs = kind === 'arrow' ? 0.9 : kind === 'fireball' ? 2.4 : kind === 'nova' ? 2.3 : kind === 'blackhole' ? 2.0 : 1.7; halo.scale.set(hs, hs, 1); grp.add(halo);
+    var hs = kind === 'arrow' || kind === 'lev' ? 0.9 : kind === 'fireball' ? 2.4 : kind === 'nova' ? 2.3 : kind === 'blackhole' ? 2.0 : 1.7; halo.scale.set(hs, hs, 1); grp.add(halo);
     grp.position.copy(from); grp.userData.keep = true;
     scene.add(grp);
     projectiles.push({ obj: grp, from: from.clone(), to: to.clone(), t: 0, dur: o.dur || 0.22, arc: o.arc === undefined ? 0.25 : o.arc, kind: kind, E: E, el: o.el, prism: o.prism, onArrive: o.onArrive, acc: 0, spin: rnd(0, 6) });
@@ -3035,7 +3046,7 @@ var FX = (function () {
       V2.copy(p.from).lerp(p.to, Math.min(1, k + 0.05)); V2.y += Math.sin(Math.min(1, k + 0.05) * Math.PI) * p.arc;
       p.obj.position.copy(V); if (k < 1) p.obj.lookAt(V2);
       if (p.obj.userData.bh) p.obj.userData.bh.tick(dt, 2.5);
-      else if (p.kind !== 'arrow') { p.spin += dt * 9; p.obj.children[0].rotation.set(p.spin, p.spin * 0.7, 0); }
+      else if (p.kind !== 'arrow' && p.kind !== 'lev') { p.spin += dt * 9; p.obj.children[0].rotation.set(p.spin, p.spin * 0.7, 0); }
       // 꼬리 입자
       p.acc += dt;
       while (p.acc > 0.012) {
@@ -3050,6 +3061,11 @@ var FX = (function () {
             _b4.copy(V).addScaledVector(_b2, Math.cos(p.hel) * 0.2 * hx).addScaledVector(_b3, Math.sin(p.hel) * 0.2 * hx);
             emitTo(glow, { pos: _b4, n: 1, spread: 0.02, speed: [0.2, 0.8], life: [0.25, 0.45], size: [0.14, 0.24], sizeEnd: 0, color: hx > 0 ? [0xffe2b0, BH_AMB] : [BH_VIO, BH_LIL], drag: 1.5 });
           }
+        }
+        else if (p.kind === 'lev') {                        // 붉은 잔광 + 떨어지는 핏방울 + 옅은 피안개
+          emitTo(glow, { pos: V, n: 1, spread: 0.04, speed: [0, 0.4], life: [0.2, 0.4], size: [0.12, 0.22], sizeEnd: 0, color: [0xff4050, 0xb3001b] });
+          if (Math.random() < 0.35) chunkBurst({ pos: V, n: 1, spread: 0.04, speed: [0, 0.3], up: [0, 0.5], size: [0.03, 0.05], shape: [1, 1.5, 1], color: BLOOD, life: [0.5, 0.8], grav: 12, bounce: 0.05, spin: 0 });
+          if (Math.random() < 0.3) emitTo(smoke, { pos: V, n: 1, spread: 0.03, speed: [0, 0.2], life: [0.3, 0.5], size: [0.2, 0.3], sizeEnd: 0.8, color: 0x3a0006, alpha: 0.35, drag: 2 });
         }
         else if (p.kind === 'arrow') emitTo(glow, { pos: V, n: 1, spread: 0.05, speed: [0, 0.6], life: [0.18, 0.4], size: [0.1, 0.2], sizeEnd: 0, color: [p.E.c1, p.E.c2], prism: p.prism, twinkle: p.el === 'star' ? 30 : 0 });
         else emitTo(glow, { pos: V, n: 2, spread: 0.08, speed: [0.2, 1], life: [0.2, 0.42], size: [0.16, 0.3], sizeEnd: 0, color: [p.E.c1, p.E.c2], prism: p.prism });
@@ -3933,6 +3949,46 @@ void main() {
     if (i < 4) { V.set(P.x, P.y + R + 0.5, P.z); errPopup(V, { word: i === 0 ? 0 : undefined, size: 1.1, life: 0.7, delay: 0.3 }); }
   }
 
+  // ---------------------------------------------------------------- 핏빛 (레바테인)
+  // 살짝 붉게 빛나되 검붉은 피의 느낌: 피안개 · 튀어 떨어지는 핏방울 · 번지는 피웅덩이 · 솟는 핏빛 가시 · 바닥에 꽂혔다 흩어지는 화살
+  var BLOOD = [0x8a0014, 0xb3001b, 0x5a000c, 0xd0203a];
+  function levLaunch(from, dir) {                                       // 던지는 순간: 손끝에서 피안개가 터지고 붉은 고리가 밀려남
+    shockRing(from, 0xff3040, 0.1, 0.9, 0.3, { y: from.y, tiltTo: dir, thin: true });
+    emitTo(smoke, { pos: from, n: 6, spread: 0.12, speed: [0.3, 1.2], up: [0, 0.5], life: [0.4, 0.8], size: [0.3, 0.6], sizeEnd: 1.4, sizeEase: true, color: 0x4a0008, alpha: 0.45, drag: 2 });
+    emitTo(glow, { pos: from, n: 10, dir: dir, cone: 0.6, speed: [2, 6], life: [0.15, 0.35], size: [0.08, 0.15], sizeEnd: 0, color: [0xff4a5a, 0xb3001b], drag: 3 });
+  }
+  function stuckLev(gr, dir) {                                          // 바닥에 비스듬히 꽂힌 레바테인이 잠시 뒤 피안개로 흩어짐
+    var g = new THREE.Group(), m1 = new THREE.MeshBasicMaterial({ color: 0x2a0508, transparent: true }), m2 = new THREE.MeshBasicMaterial({ color: 0xc0102a, transparent: true });
+    var sh = new THREE.Mesh(geo.arrowShaft, m1); sh.scale.set(1.6, 1.6, 1.5); g.add(sh);
+    var hd = new THREE.Mesh(geo.arrowHead, m2); hd.scale.set(1.8, 1.8, 1.6); g.add(hd);
+    g.position.set(gr.x - dir.x * 0.3, 0.45, gr.z - dir.z * 0.3);
+    g.lookAt(gr.x + dir.x * 0.5, -0.4, gr.z + dir.z * 0.5);
+    var at = g.position.clone();
+    addTransient(g, 1.3, function (ob, k) {
+      var d = k > 0.6 ? (k - 0.6) / 0.4 : 0;
+      m1.opacity = m2.opacity = 1 - d; ob.scale.setScalar(1 - d * 0.5);
+      if (d > 0 && Math.random() < 0.3) emitTo(smoke, { pos: at, n: 1, spread: 0.15, speed: [0.1, 0.4], up: [0.3, 0.8], life: [0.5, 0.8], size: [0.3, 0.5], sizeEnd: 1.2, color: 0x4a0008, alpha: 0.4, drag: 1 });
+    });
+  }
+  function levImpact(P, gr, dir, pw, R, lite) {
+    blast(P, 0x3a0008, 0.2, 1.3 * pw, 0.45, { normal: true, opacity: 0.75 });                  // 검붉은 피안개 구
+    blast(P, 0xff2a3a, 0.2, 1.0 * pw, 0.2, { opacity: 0.7 });
+    spikes(gr, 0x7a0014, lite ? 4 : 7, R * 1.2, 1.5 * pw, 0.95, { emissive: 0x5a0010, ei: 0.9, opacity: 0.95 });   // 솟아오르는 핏빛 가시
+    chunkBurst({ pos: P, n: lite ? 10 : 22, spread: R * 0.4, speed: [2, 6], up: [2, 6], size: [0.05, 0.1], shape: [1, 1.4, 1], color: BLOOD, life: [0.8, 1.3], grav: 18, bounce: 0.05, dir: dir, spin: 4 });   // 튀는 핏방울
+    emitTo(glow, { pos: P, n: lite ? 10 : 20, dir: dir, cone: 1.3, speed: [3, 8], life: [0.2, 0.5], size: [0.1, 0.2], sizeEnd: 0, color: [0xff5a6a, 0xd0203a, 0x8a0014], drag: 3 });
+    emitTo(smoke, { pos: P, n: 8, spread: R * 0.5, speed: [0.3, 1.4], up: [0.2, 0.9], life: [0.8, 1.4], size: [0.6, 1.1], sizeEnd: 2.2, sizeEase: true, color: 0x3a0008, alpha: 0.4, drag: 1.6 });
+    decal(tex.dot, 0x4a0008, gr, 2.2 * pw, lite ? 2.5 : 5, { normal: true, opacity: 0.85, grow: true, growSpeed: 3, hold: 0.7 });   // 번지는 피웅덩이
+    decal(tex.dot, 0xff2030, gr, 2.6 * pw, 0.6, { opacity: 0.5, hold: 0.2 });
+    shockRing(gr, 0xd0203a, 0.3, 3.2 * pw, 0.45, {});
+    if (!lite) {
+      pillar(gr, 0xb3001b, 0.9 * pw, 6, 0.55, { opacity: 0.6 });
+      stuckLev(gr, dir);
+      if (hooks.screenFlash) hooks.screenFlash('#5a0010', 0.35);
+    }
+    flash(P, 0xff2a3a, 3.2 * pw, 0.4);
+    shake(0.5 * pw);
+  }
+
   // ---------------------------------------------------------------- 속성별 타격 이펙트
   // p: 타격 지점(몬스터 몸통 중앙), o: { dir(수평 단위벡터), ground(Vector3 발밑), power, radius(몬스터 크기), prism }
   function impact(elKey, p, o) {
@@ -4084,6 +4140,9 @@ void main() {
       case 'error':
         glitchImpact(P, gr, dir, pw, R, !!o.lite);
         break;
+      case 'blood':
+        levImpact(P, gr, dir, pw, R, !!o.lite);
+        break;
       default: // steel
         emitTo(glow, { pos: P, n: 16, dir: dir, cone: 1.15, speed: [4, 10], up: [1, 3], life: [0.2, 0.5], size: [0.09, 0.17], sizeEnd: 0, color: [0xffffff, 0xffe6a0, 0xffb060], grav: 15, floor: 0.05, drag: 0.5 });
         chunkBurst({ pos: P, n: 5, speed: [2, 4.5], up: [2.5, 5], size: [0.07, 0.12], color: [0xc8d2e0, 0x8a94a6], life: [0.6, 1], dir: dir });
@@ -4185,6 +4244,7 @@ void main() {
     ['orb', 'fireball', 'arrow'].forEach(function (k) {
       tryDo(function () { projectile(P.clone(), P.clone().add(D), { el: k === 'fireball' ? 'fire' : 'star', kind: k, dur: 5 }); });
     });
+    tryDo(function () { projectile(P.clone(), P.clone().add(D), { el: 'blood', kind: 'lev', dur: 5 }); levLaunch(P.clone(), D.clone()); });
     tryDo(function () { glitchSlash(P.clone(), D.clone()); glitchDelete(P.clone(), P.clone(), 0.7, 0); });
     tryDo(function () { deathBurst(P.clone(), 0xffffff, true); });
     tryDo(function () { lootOrbs(P.clone(), dummy, 2, [0xffd23e], null); });
@@ -4254,7 +4314,7 @@ void main() {
     Trail: Trail, slashArc: slashArc, thrustStreak: thrustStreak, groundSlam: groundSlam, chargeAt: chargeAt, projectile: projectile,
     bhCharge: bhCharge, bhLaunch: bhLaunch, bhOpen: bhOpen, bhCollapse: bhCollapse, bhUltHole: bhUltHole, diskMat: diskMat, after: after,
     impact: impact, novaCollapse: novaCollapse, novaBreakout: novaBreakout, binaryInspiral: binaryInspiral, whiteDwarfMerger: whiteDwarfMerger, inspiralRatio: inspiralRatio, meteor: meteor, meteorImpact: meteorImpact, meteorCall: meteorCall, cometCrash: cometCrash, debris: debris, deathBurst: deathBurst, lootOrbs: lootOrbs, levelUp: levelUp, victory: victory, dust: dust, hurtBurst: hurtBurst,
-    glitchSlash: glitchSlash, glitchDelete: glitchDelete, errPopup: errPopup, checkerBox: checkerBox, tearLines: tearLines,
+    levLaunch: levLaunch, glitchSlash: glitchSlash, glitchDelete: glitchDelete, errPopup: errPopup, checkerBox: checkerBox, tearLines: tearLines,
     haloSprite: haloSprite, PRISM: PRISM,
     get scene() { return scene; }, get activeCount() { return (glow ? glow.active : 0) + (chunks ? chunks.active : 0) + transient.length; }
   };
@@ -4672,6 +4732,26 @@ var M = (function () {
       base = marker(g, 0.3); tip = marker(g, 1.45);
       glowOn(g, 0.8, 1.5);
       rest = { pos: [0.06, -0.02, 0.14], rot: [2.05, 0, -0.12] };
+    } else if (type === 'javelin') {                        // 레바테인: 검붉은 창대 · 핏빛 촉과 미늘 · 은은히 빛나는 붉은 핏줄 · 검붉은 깃 — 촉에서 핏방울이 떨어짐
+      var ironR = mat(0x2a0a10, { flat: true }), bloodM = mat(0x7a0816, { emissive: 0x5a000c, ei: 0.85, flat: true }), featM = mat(0x5a0612, { flat: true }), veinM = basic(0xff2a3a, { add: true, opacity: 0.55 });
+      cyl(g, 0.024, 0.028, 1.4, 6, ironR, 0, 0.58, 0);
+      box(g, 0.012, 1.0, 0.012, veinM, 0.026, 0.72, 0); box(g, 0.012, 1.0, 0.012, veinM, -0.026, 0.72, 0);
+      cone(g, 0.075, 0.4, 4, bloodM, 0, 1.47, 0);
+      cone(g, 0.035, 0.16, 4, bloodM, 0.07, 1.25, 0, 0, 0, -2.6); cone(g, 0.035, 0.16, 4, bloodM, -0.07, 1.25, 0, 0, 0, 2.6);   // 아래로 휜 미늘
+      octa(g, 0.05, ironR, 0, 1.26, 0);
+      for (var fi = 0; fi < 3; fi++) box(g, 0.006, 0.24, 0.1, featM, Math.sin(fi * 2.094) * 0.05, 0, Math.cos(fi * 2.094) * 0.05, 0, fi * 2.094, 0);   // 깃 3장
+      cone(g, 0.03, 0.08, 4, ironR, 0, -0.16, 0, Math.PI, 0, 0);
+      var levHalo = FX.haloSprite(0xff2436, 0.9, 0.26); levHalo.position.set(0, 1.42, 0); g.add(levHalo);
+      var drip = marker(g, 1.28), dripV = new THREE.Vector3(), dripNext = 0.6;
+      base = marker(g, 0.5); tip = marker(g, 1.66);
+      ticks.push(function (t) {
+        levHalo.material.opacity = 0.22 + Math.sin(t * 2.2) * 0.06;                                 // 맥박처럼 은은한 붉은 빛
+        if (t > dripNext) {
+          dripNext = t + 0.5 + Math.random() * 0.8;
+          if (g.visible && g.parent && FX.scene) FX.chunkBurst({ pos: drip.getWorldPosition(dripV), n: 1, spread: 0.01, speed: [0, 0.05], up: [-0.2, 0], size: [0.035, 0.05], shape: [1, 1.6, 1], color: [0x8a0014, 0xb3001b], life: [0.8, 1.1], grav: 9, bounce: 0, spin: 0 });
+        }
+      });
+      rest = { pos: [0.07, -0.05, 0.12], rot: [2.25, 0, -0.1] };
     } else if (type === 'katana' && w.glitch) {             // 치명적 오류: 텍스처를 잃은(마젠타·검정 체커) 픽셀 칼날 — 빠진 칸 · RGB 잔상 · 옆으로 어긋나는 조각 · 에러 창
       var chkM = new THREE.MeshBasicMaterial({ map: FX.tex.checker }), pixM = basic(0x2bffe0), blkM = mat(0x14141c, { flat: true });
       var VX = 0.074, chkP = [], pixP = [], blkP = [], slc = [[], [], []], SLICE = { 5: 0, 6: 0, 9: 1, 10: 1, 13: 2 };
@@ -5139,6 +5219,7 @@ var M = (function () {
         if (weapon.off && weapon.off.parent) weapon.off.parent.remove(weapon.off);
       }
       weapon = wcache[id] || (wcache[id] = buildWeapon(id));
+      weapon.g.visible = true;                        // (던져서 숨겼던 레바테인도 다시 보이게)
       if (weapon.g.userData.arrow) weapon.g.userData.arrow.visible = true;
       var r = weapon.rest;
       weapon.g.position.set(r.pos[0], r.pos[1], r.pos[2]);
@@ -6527,7 +6608,8 @@ var UI = (function () {
         '<div class="wc-tags"><span class="wc-tag type">' + esc(T.name) + '</span><span class="wc-tag el">' + esc(E.name) + '</span></div>' +
         '<div class="wc-desc">' + esc(w.desc) + '</div>' +
         '<div class="wc-move">⚔ ' + esc(w.move || T.move) + '</div>' +
-        '<div class="wc-dmg">공격력 <b>' + BAL.swordDamage + '</b> <span>모든 무기 동일</span></div>' +
+        (w.once ? '<div class="wc-dmg">공격력 <b>∞</b> <span>한 방 처치 (보스 포함)</span></div><div class="wc-once">🩸 1회용 소모품 · 던지면 사라짐 · ' + (owned ? '1/1 보유 (중첩 불가)' : '최대 1개') + '</div>'
+          : '<div class="wc-dmg">공격력 <b>' + BAL.swordDamage + '</b> <span>모든 무기 동일</span></div>') +
         '<button class="btn wc-btn' + (equipped ? ' ghost' : owned ? '' : afford ? ' primary' : ' dim') + '">' + btnLabel + '</button>' +
         '</div>');
       card.addEventListener('mouseenter', function () { Game.previewWeapon(w.id); });
@@ -7169,6 +7251,7 @@ var Game = (function () {
   var lobbyShowoff = 0;
   function buyOrEquip(id) {
     var w = weaponById(id);
+    if (w.once && !weaponById(save.equipped).once && (save.weapons.indexOf(id) >= 0 || save.gold >= w.price)) save.main = save.equipped;   // 던진 뒤 돌아갈 무기
     if (save.weapons.indexOf(id) >= 0) {
       save.equipped = id; SFX.equip();
       UI.toast(w.name + ' 장착!');
@@ -7176,6 +7259,7 @@ var Game = (function () {
       save.gold -= w.price; save.weapons.push(id); save.equipped = id;
       SFX.buy();
       UI.banner('NEW! ' + w.name, 'small');
+      if (w.once) UI.toast('1회용 — 던지면 사라지고, 1개만 가질 수 있어요', 2600);
       FX.emit({ pos: TMP.set(0, 1.3, 0.4), n: 40, spread: 0.6, speed: [1, 4], up: [1, 4], life: [0.6, 1.2], size: [0.14, 0.26], sizeEnd: 0, color: [ELEMENTS[w.el].c1, ELEMENTS[w.el].c2, 0xffd23e], drag: 1.6, twinkle: 20 });
     } else {
       SFX.wrong(); UI.toast('골드가 부족합니다 (' + w.price + 'G 필요)');
@@ -7251,6 +7335,7 @@ var Game = (function () {
 
     var hero = M.buildHero();
     var weapon = hero.equip(save.equipped);
+    var backW = weapon.def.once ? hero.preload(onceBackId()) : null;   // 레바테인을 던진 뒤 쥘 무기 (교체 순간 셰이더 컴파일 방지용 예열)
     if (SFX.warmNova) SFX.warmNova();   // 잔향·왜곡 곡선을 입장 때 미리 만들어 둔다 (운석·초신성·블랙홀·혜성 첫 발동 끊김 방지. 생성은 이제 수 ms)
     var trail = new FX.Trail(28, 0.19);
     trail.setColors(weapon.E.c1, weapon.E.c2, weapon.prism);
@@ -7283,8 +7368,12 @@ var Game = (function () {
     camera.position.copy(camPos); camera.lookAt(camLook);
     // 입장 순간(암전 중)에 ① 모든 이펙트 셰이더 컴파일 ② 맵 전체를 위에서 한 번 그려 모델·이름표 텍스처까지 GPU 에 업로드
     // → 탐험 중 새 몬스터가 처음 보일 때, 첫 타격 때 끊기지 않는다
-    if (weapon.def.glitch) glitchWarm();                     // (예열 렌더보다 먼저: 셰이더 링크 확인이 쌓인 GPU 작업을 기다리지 않게)
-    FX.prewarm(renderer, camera, function () { warmRender(sceneDungeon, grid); });
+    if (weapon.def.glitch || (backW && backW.def.glitch)) glitchWarm();                     // (예열 렌더보다 먼저: 셰이더 링크 확인이 쌓인 GPU 작업을 기다리지 않게)
+    FX.prewarm(renderer, camera, function () {
+      if (backW) { backW.g.position.set(sw.x, -40, sw.z); sceneDungeon.add(backW.g); }
+      warmRender(sceneDungeon, grid);
+      if (backW) sceneDungeon.remove(backW.g);
+    });
     setState('dungeon');
     UI.showHUD(run, save);
     UI.banner(d.name, 'small');
@@ -7583,6 +7672,15 @@ var Game = (function () {
       },
       fx: null
     },
+    javelin: {                                                 // 레바테인: 팔을 머리 뒤로 크게 젖혔다가 몸을 비틀며 내던짐
+      dur: 0.9, hit: 0.7, ranged: true, charge: [0.06, 0.42], release: 0.46, swing: 0.36,
+      anim: function (h, k) {
+        if (k < 0.42) { var w = ease(k / 0.42); h.armR.rotation.x = lerp(-0.25, -2.9, w); h.armR.rotation.z = -0.2 * w; h.armL.rotation.x = -1.2 * w; h.body.rotation.y = 0.6 * w; h.body.rotation.x = -0.15 * w; }
+        else if (k < 0.52) { var s = easeIn((k - 0.42) / 0.1); h.armR.rotation.x = lerp(-2.9, 0.6, s); h.armL.rotation.x = lerp(-1.2, 0.3, s); h.body.rotation.y = lerp(0.6, -0.5, s); h.body.rotation.x = lerp(-0.15, 0.25, s); }
+        else { var r = ease((k - 0.52) / 0.48); h.armR.rotation.x = lerp(0.6, -0.25, r); h.armR.rotation.z = 0; h.armL.rotation.x = lerp(0.3, 0, r); h.body.rotation.y = lerp(-0.5, 0, r); h.body.rotation.x = lerp(0.25, 0, r); }
+      },
+      fx: null
+    },
     bow: {
       dur: 0.92, hit: 0.7, ranged: true, charge: [0.1, 0.52], release: 0.54, swing: 0.12,
       anim: function (h, k) {
@@ -7627,14 +7725,14 @@ var Game = (function () {
     run.hero.g.rotation.y = Math.atan2(dir.x, dir.z);
     if (w.glitch) w.glitch.burst(def.dur);                  // 휘두르는 동안 칼이 깨져 보임
   }
-  function doHit(mo) {
+  function doHit(mo, w) {
     if (!run || !mo) return;
-    applyHit(mo);
+    applyHit(mo, w);
   }
-  function applyHit(mo) {
-    var w = run.weapon, def = atkOf(w);
-    mo.plan.hp = Math.max(0, mo.plan.hp - BAL.swordDamage);
-    var meteorW = !!w.def.meteor, bhW = !!w.def.blackhole, dead = mo.plan.hp <= 0, heavy = !!def.heavy || meteorW || bhW, big = heavy || dead;
+  function applyHit(mo, wThrown) {                              // wThrown: 날아가는 동안 손의 무기가 바뀌어도 던진 무기로 판정
+    var w = wThrown || run.weapon, def = atkOf(w), onceW = !!w.def.once, dmg = onceW ? mo.plan.hp : BAL.swordDamage;   // 레바테인: 남은 체력 전부 (보스 포함 한 방)
+    mo.plan.hp = Math.max(0, mo.plan.hp - dmg);
+    var meteorW = !!w.def.meteor, bhW = !!w.def.blackhole, dead = mo.plan.hp <= 0, heavy = !!def.heavy || meteorW || bhW || onceW, big = heavy || dead;
     var pw = (mo.plan.tier === 'normal' ? 1 : 1.25) * (dead ? 1.12 : 1);
     var hitPos = new THREE.Vector3(mo.g.position.x, mo.h * 0.55, mo.g.position.z);
     var ground = new THREE.Vector3(mo.g.position.x, 0, mo.g.position.z);
@@ -7654,7 +7752,7 @@ var Game = (function () {
     addShake(heavy ? 0.75 : 0.45);
     kickCamera(dir, heavy ? 1 : 0.65, heavy);
     buzz(dead ? [22, 28, 40] : heavy ? 34 : 18);
-    addFloat(mo.g.position, mo.h + 0.5, String(BAL.swordDamage), hexCss(w.E.glow), 'dmg' + (big ? ' big' : ''));
+    addFloat(mo.g.position, mo.h + 0.5, String(dmg), hexCss(w.E.glow), 'dmg' + (big ? ' big' : ''));
     reactMonster(mo, dir, heavy ? 1.35 : dead ? 1.15 : 1);
     UI.updateBattleHP(mo.plan);
     UI.hitPanel(big);
@@ -7681,6 +7779,26 @@ var Game = (function () {
     for (var i = monsterFx.length - 1; i >= 0; i--) if (monsterFx[i].mo === mo && (monsterFx[i].kind === 'hurt' || monsterFx[i].kind === 'spag')) monsterFx.splice(i, 1);
     monsterFx.push({ mo: mo, t: 0, kind: 'spag', dur: dur, power: power, ly: hole.y - mo.h * 0.5,
       lx: wx * Math.cos(a) - wz * Math.sin(a), lz: wx * Math.sin(a) + wz * Math.cos(a) });
+  }
+  // ---------- 1회용 (레바테인): 던지는 순간 보유 목록에서 빠지고, 공격이 끝나면 원래 무기를 다시 쥔다. 다시 사야 쓸 수 있고 1개만 보유 ----------
+  function onceBackId() { var m = save.main; return m !== undefined && save.weapons.indexOf(m) >= 0 && !weaponById(m).once ? m : 0; }
+  function throwOnce(wp) {
+    if (!wp.def.once) return;
+    wp.g.visible = false;
+    save.weapons = save.weapons.filter(function (id) { return id !== wp.def.id; });
+    save.equipped = onceBackId();
+    persistSave(storage, save);
+  }
+  function swapRunWeapon(id) {
+    var wp = run.hero.equip(id);
+    run.weapon = wp;
+    run.trail.setColors(wp.E.c1, wp.E.c2, wp.prism); run.trail.clear();
+    if (run.ultRing) run.ultRing.material.color.setHex(wp.E.glow);
+    UI.showHUD(run, save);
+    syncMusic();
+    FX.emit({ pos: wp.tip.getWorldPosition(new THREE.Vector3()), n: 18, spread: 0.3, speed: [0.5, 2], up: [0.5, 2], life: [0.3, 0.6], size: [0.1, 0.2], sizeEnd: 0, color: [wp.E.c1, wp.E.c2], drag: 2 });
+    SFX.equip();
+    UI.toast('레바테인 소멸 — ' + wp.def.name + '을(를) 다시 쥡니다', 2200);
   }
   function killMonster(mo) {
     mo.plan.alive = false;
@@ -7862,6 +7980,12 @@ var Game = (function () {
         FX.meteor(meteorSky(tg, 0.25), tg, { dur: 0.5, size: 0.85, kind: lk,
           onArrive: function (p) { FX.meteorImpact(p, { ground: new THREE.Vector3(p.x, 0, p.z), power: 0.8, lite: true, kind: lk }); SFX.meteorImpact(0, false); if (lk === 'comet') SFX.cometShatter(0, false); } });
       }
+      if (lobbyWeapon.def.once && !lobbyNova.fired && k >= def.release) {       // 레바테인: 옆으로 던져 보여주기 (미리보기는 소모되지 않음)
+        lobbyNova.fired = true;
+        var lf = lobbyWeapon.tip.getWorldPosition(new THREE.Vector3()), lt = lobbyTarget(h).setY(0.9), ld = lt.clone().sub(lf).setY(0).normalize();
+        SFX.release('javelin'); FX.levLaunch(lf, TMP3.copy(lt).sub(lf).normalize()); lobbyWeapon.g.visible = false;
+        FX.projectile(lf, lt, { el: 'blood', kind: 'lev', dur: 0.2, arc: 0.2, onArrive: function (pp) { FX.impact('blood', pp, { dir: ld, ground: new THREE.Vector3(pp.x, 0, pp.z), power: 0.8, radius: 0.5, lite: true }); SFX.impact('blood', true); } });
+      }
       if (lobbyWeapon.glitch && !lobbyNova.fired && k >= def.hit) {          // 치명적 오류: 색수차 베기 → 옆에 오류 타격
         lobbyNova.fired = true; lobbyWeapon.glitch.burst(0.5);
         var gt = lobbyTarget(h), gd = TMP3.set(gt.x - h.g.position.x, 0, gt.z - h.g.position.z).normalize();
@@ -7875,7 +7999,7 @@ var Game = (function () {
         lobbyTrail.push(lobbyWeapon.base.getWorldPosition(TMP), lobbyWeapon.tip.getWorldPosition(TMP2));
       }
       if (!lobbyShowoffSwung && k > (def.swing || 0.2)) { lobbyShowoffSwung = true; SFX.swing(sndOf(lobbyWeapon)); }
-      if (k >= 1) { lobbyShowoff = 0; lobbyShowoffSwung = false; lobbyNova.charged = lobbyNova.fired = lobbyNova.meteor = false; if (lobbyWeapon.nova) lobbyWeapon.nova.set(0, 1); if (lobbyWeapon.bh) lobbyWeapon.bh.set(0, 1); h.armR.rotation.set(-0.25, 0, 0); h.armL.rotation.set(0, 0, 0); h.body.rotation.set(0, 0, 0); }
+      if (k >= 1) { lobbyShowoff = 0; lobbyShowoffSwung = false; lobbyNova.charged = lobbyNova.fired = lobbyNova.meteor = false; lobbyWeapon.g.visible = true; if (lobbyWeapon.nova) lobbyWeapon.nova.set(0, 1); if (lobbyWeapon.bh) lobbyWeapon.bh.set(0, 1); h.armR.rotation.set(-0.25, 0, 0); h.armL.rotation.set(0, 0, 0); h.body.rotation.set(0, 0, 0); }
     } else {
       h.armL.rotation.x = Math.sin(t * 1.6) * 0.07;
       h.armR.rotation.x = -0.25 + Math.sin(t * 1.6 + 1) * 0.06;
@@ -8132,8 +8256,9 @@ var Game = (function () {
       if (!run.weapon.def.meteor) SFX.release(a.snd);
       var from = run.weapon.tip.getWorldPosition(new THREE.Vector3());
       var to = new THREE.Vector3(mo.g.position.x, mo.h * 0.55, mo.g.position.z);
-      var nova = a.el === 'nova', bh = !!run.weapon.bh;
-      var travel = Math.max(bh ? 0.24 : 0.12, from.distanceTo(to) / (a.type === 'bow' ? 26 : nova ? 18 : bh ? 10 : 14));
+      var nova = a.el === 'nova', bh = !!run.weapon.bh, lev = a.type === 'javelin', thrown = run.weapon;
+      var travel = Math.max(bh ? 0.24 : 0.12, from.distanceTo(to) / (a.type === 'bow' ? 26 : lev ? 22 : nova ? 18 : bh ? 10 : 14));
+      if (lev) { FX.levLaunch(from, TMP3.copy(to).sub(from).normalize()); addShake(0.3); throwOnce(thrown); }
       if (nova) { FX.novaBreakout(from, TMP3.copy(to).sub(from).normalize()); addShake(0.3); }
       if (bh) { FX.bhLaunch(from, TMP3.copy(to).sub(from).normalize()); addShake(0.35); kickCamera(TMP3.setY(0).normalize(), 0.4, false); }
       if (run.weapon.def.meteor) {                             // 용의 숨결: 지팡이가 하늘을 부르면 운석이 떨어진다
@@ -8141,9 +8266,9 @@ var Game = (function () {
         FX.meteorCall(from, mkind(run.weapon)); summonSfx(run.weapon); SFX.meteorFall(0.5, mpan);
         FX.meteor(sky, to, { dur: 0.5, kind: mkind(run.weapon), onBreak: function () { SFX.meteorBreak(mpan); }, onArrive: function () { if (run && mo && mo.plan.alive) doHit(mo); } });
       } else FX.projectile(from, to, {
-        el: a.el, kind: a.type === 'bow' ? 'arrow' : nova ? 'nova' : bh ? 'blackhole' : (a.el === 'fire' ? 'fireball' : 'orb'),
-        dur: travel, arc: a.type === 'bow' ? 0.15 : bh ? 0.35 : 0.3, prism: a.prism,
-        onArrive: function () { if (run && mo && mo.plan.alive) { if (bh) bhArrive(mo); else doHit(mo); } }
+        el: a.el, kind: a.type === 'bow' ? 'arrow' : lev ? 'lev' : nova ? 'nova' : bh ? 'blackhole' : (a.el === 'fire' ? 'fireball' : 'orb'),
+        dur: travel, arc: a.type === 'bow' ? 0.15 : lev ? 0.22 : bh ? 0.35 : 0.3, prism: a.prism,
+        onArrive: function () { if (run && mo && mo.plan.alive) { if (bh) bhArrive(mo); else doHit(mo, thrown); } }
       });
       if (a.type === 'bow' && run.weapon.g.userData.arrow) run.weapon.g.userData.arrow.visible = false;
     }
@@ -8163,6 +8288,7 @@ var Game = (function () {
       if (run.weapon.nova) run.weapon.nova.set(0, 1);
       h.armR.rotation.set(-0.25, 0, 0); h.armL.rotation.set(0, 0, 0);
       h.body.rotation.set(0, 0, 0);
+      if (run.weapon.def.once && !run.weapon.g.visible) swapRunWeapon(save.equipped);   // 레바테인을 던졌으면 원래 무기를 다시 쥔다
       h.g.rotation.y = Math.atan2(a.dir.x, a.dir.z);
       h.g.position.set(run.player.x, h.g.position.y, run.player.z);
       run.trail.clear();
